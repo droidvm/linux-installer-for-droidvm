@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.9.4
+Type=Application
+Name=软件管家
+Terminal=false
+#Icon=starred
+Icon=/exbin/tools/zzswmgr/ic_zzswmgr.png
+Categories=System;
+Exec=/exbin/tools/zzswmgr/zzswmgr.py %f
+Path=/exbin/tools/zzswmgr
+# 加上这个，在chrome中点击安装包会导致安装两次!
+MimeType=application/vnd.debian.binary-package
