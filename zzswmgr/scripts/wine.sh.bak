@@ -1,0 +1,390 @@
+#!/bin/bash
+
+: '
+
+https://blog.csdn.net/SHIGUANGTUJING/article/details/89291732
+
+中文乱码处理，检查以下两点：
+
+1). 环境变量
+droidvm@localhost:/usr/bin$ set|grep LANG
+APP_LANGUAGE=zh
+LANG=zh_CN.UTF-8
+LANGUAGE=zh_CN.UTF-8
+
+2). 系统中已安装的字体文件：
+fc-list  :lang=zh|grep SC		# SC 一般是大陆简体中文，其它的东亚字体简称还有HK,TC,JP, KR
+
+ls -al ~/.wine32/drive_c/windows/Fonts | grep simsun
+
+如果没有 simsun 字符，因为微软专利的原因，不能对公开放下载，需要自己找：
+cd Windows\fonts
+md C:\tmpfonts
+copy simsun* C:\tmpfonts\
+
+
+如果感觉wine中字体太小，可以 exec32 winecfg 中设置（“显示”标签中选择适当的dpi即可）。
+
+
+
+'
+
+SWNAME=wine
+DIR_DESKTOP_FILES=/usr/share/applications
+DSK_FILE=${SWNAME}.desktop
+DSK_PATH=${DIR_DESKTOP_FILES}/${DSK_FILE}
+
+action=$1
+if [ "$action" == "" ]; then action=安装; fi
+
+. ./scripts/common.sh
+
+function sw_download() {
+	case "${CURRENT_VM_ARCH}" in
+		"arm64")
+				which box86 >/dev/null 2>&1
+				if [ $? -ne 0 ]; then
+					echo ""				> /tmp/msg.txt
+					echo "请先安装box"	>>/tmp/msg.txt
+					echo ""				>>/tmp/msg.txt
+					gxmessage -title "提示" -file /tmp/msg.txt -center
+					exit 1
+				fi
+
+				# 注意，这里要安装 【【跨CPU架构的 amd64 wine】】　!!!
+				# ======================================================================
+				# 在arm64 linux中，box 启动 "异构wine" , "异构wine" 再启动 windows exe
+				# box 本身运行于arm64 linux中, 启动的wine却是amd64架构的wine，即异构wine
+				# box 就是干这个事的，用来在arm linux中启动x86架构的程序
+				tmp_version="8.9-amd64"
+				DEB_PATH=./downloads/${SWNAME}-${tmp_version}.tar.xz
+				app_dir=/opt/apps/${SWNAME}-${tmp_version}
+
+				# 两个下载地址:
+				# https://dl.winehq.org/wine-builds/				# 相当慢，而且据测试在proot环境中，此系列的wine版本总是会有莫名其妙的问题
+				# https://github.com/Kron4ek/Wine-Builds/releases/	# github, 都懂的，经常无法访问，不使用vpn的话，能不能从这里下载到文件全看运气
+
+				swUrl=https://github.com/Kron4ek/Wine-Builds/releases/download/8.9/wine-8.9-amd64.tar.xz
+				swUrl=${APP_URL_DLSERVER}/wine/wine-8.9-amd64.tar.xz
+				swUrl=${APP_URL_DLSERVER}/wine-8.9-amd64.tar.xz
+				download_file2 "${DEB_PATH}" "${swUrl}"
+				exit_if_fail $? "下载失败，网址：${swUrl}"
+				;;
+		"amd64")
+				echo "不需要单独下载"
+				;;
+		*) exit_unsupport ;;
+	esac
+
+}
+
+function sw_install_depends() {
+	echo "正在安装box64开发者整理的依赖库"
+	echo "LINUX_ROOTFS_VER: $LINUX_ROOTFS_VER"
+
+	tmp_libs=libldap-2.5-0
+
+	
+	if [ "${ROOTFS_CODENAME}" == "kinetic" ]; then
+		tmp_libs=libldap-2.5-0
+		echo "请注意：已将libldap-2.4-2 替换为 ${tmp_libs}"
+		sudo apt-get install -y libasound2:armhf libc6:armhf libglib2.0-0:armhf libgphoto2-6:armhf libgphoto2-port12:armhf \
+			libgstreamer-plugins-base1.0-0:armhf libgstreamer1.0-0:armhf ${tmp_libs}:armhf libopenal1:armhf libpcap0.8:armhf \
+			libpulse0:armhf libsane1:armhf libudev1:armhf libusb-1.0-0:armhf libvkd3d1:armhf libx11-6:armhf libxext6:armhf \
+			libasound2-plugins:armhf ocl-icd-libopencl1:armhf libncurses6:armhf libncurses5:armhf libcap2-bin:armhf libcups2:armhf \
+			libdbus-1-3:armhf libfontconfig1:armhf libfreetype6:armhf libglu1-mesa:armhf libglu1:armhf libgnutls30:armhf \
+			libgssapi-krb5-2:armhf libkrb5-3:armhf libodbc1:armhf libosmesa6:armhf libsdl2-2.0-0:armhf libv4l-0:armhf \
+			libxcomposite1:armhf libxcursor1:armhf libxfixes3:armhf libxi6:armhf libxinerama1:armhf libxrandr2:armhf \
+			libxrender1:armhf libxxf86vm1 libc6:armhf libcap2-bin:armhf # to run wine-i386 through box86:armhf on aarch64
+			exit_if_fail $? "32位依赖库安装失败"
+
+		sudo apt-get install -y libasound2:arm64 libc6:arm64 libglib2.0-0:arm64 libgphoto2-6:arm64 libgphoto2-port12:arm64 \
+			libgstreamer-plugins-base1.0-0:arm64 libgstreamer1.0-0:arm64 ${tmp_libs}:arm64 libopenal1:arm64 libpcap0.8:arm64 \
+			libpulse0:arm64 libsane1:arm64 libudev1:arm64 libunwind8:arm64 libusb-1.0-0:arm64 libvkd3d1:arm64 libx11-6:arm64 libxext6:arm64 \
+			ocl-icd-libopencl1:arm64 libasound2-plugins:arm64 libncurses6:arm64 libncurses5:arm64 libcups2:arm64 \
+			libdbus-1-3:arm64 libfontconfig1:arm64 libfreetype6:arm64 libglu1-mesa:arm64 libgnutls30:arm64 \
+			libgssapi-krb5-2:arm64 libkrb5-3:arm64 libodbc1:arm64 libosmesa6:arm64 libsdl2-2.0-0:arm64 libv4l-0:arm64 \
+			libxcomposite1:arm64 libxcursor1:arm64 libxfixes3:arm64 libxi6:arm64 libxinerama1:arm64 libxrandr2:arm64 \
+			libxrender1:arm64 libxxf86vm1:arm64 libc6:arm64 libcap2-bin:arm64
+			exit_if_fail $? "64位依赖库安装失败"
+			# libjpeg62-turbo:arm64 
+	fi
+
+	if [ "${ROOTFS_CODENAME}" == "lunar" ]; then
+		tmp_libs=libldap-common
+		echo "请注意：已将libldap-2.4-2 替换为 ${tmp_libs}"
+		sudo apt-get install -y libasound2:armhf libc6:armhf libglib2.0-0:armhf libgphoto2-6:armhf libgphoto2-port12:armhf \
+			libgstreamer-plugins-base1.0-0:armhf libgstreamer1.0-0:armhf ${tmp_libs}:armhf libopenal1:armhf libpcap0.8:armhf \
+			libpulse0:armhf libsane1:armhf libudev1:armhf libusb-1.0-0:armhf libvkd3d1:armhf libx11-6:armhf libxext6:armhf \
+			libasound2-plugins:armhf ocl-icd-libopencl1:armhf libncurses6:armhf libncurses5:armhf libcap2-bin:armhf libcups2:armhf \
+			libdbus-1-3:armhf libfontconfig1:armhf libfreetype6:armhf libglu1-mesa:armhf libglu1:armhf libgnutls30:armhf \
+			libgssapi-krb5-2:armhf libkrb5-3:armhf libodbc1:armhf libosmesa6:armhf libsdl2-2.0-0:armhf libv4l-0:armhf \
+			libxcomposite1:armhf libxcursor1:armhf libxfixes3:armhf libxi6:armhf libxinerama1:armhf libxrandr2:armhf \
+			libxrender1:armhf libxxf86vm1 libc6:armhf libcap2-bin:armhf # to run wine-i386 through box86:armhf on aarch64
+			exit_if_fail $? "32位依赖库安装失败"
+
+		sudo apt-get install -y libasound2:arm64 libc6:arm64 libglib2.0-0:arm64 libgphoto2-6:arm64 libgphoto2-port12:arm64 \
+			libgstreamer-plugins-base1.0-0:arm64 libgstreamer1.0-0:arm64 ${tmp_libs}:arm64 libopenal1:arm64 libpcap0.8:arm64 \
+			libpulse0:arm64 libsane1:arm64 libudev1:arm64 libunwind8:arm64 libusb-1.0-0:arm64 libvkd3d1:arm64 libx11-6:arm64 libxext6:arm64 \
+			ocl-icd-libopencl1:arm64 libasound2-plugins:arm64 libncurses6:arm64 libncurses5:arm64 libcups2:arm64 \
+			libdbus-1-3:arm64 libfontconfig1:arm64 libfreetype6:arm64 libglu1-mesa:arm64 libgnutls30:arm64 \
+			libgssapi-krb5-2:arm64 libkrb5-3:arm64 libodbc1:arm64 libosmesa6:arm64 libsdl2-2.0-0:arm64 libv4l-0:arm64 \
+			libxcomposite1:arm64 libxcursor1:arm64 libxfixes3:arm64 libxi6:arm64 libxinerama1:arm64 libxrandr2:arm64 \
+			libxrender1:arm64 libxxf86vm1:arm64 libc6:arm64 libcap2-bin:arm64
+			exit_if_fail $? "64位依赖库安装失败"
+			# libjpeg62-turbo:arm64 
+	fi
+
+	if [ "${ROOTFS_CODENAME}" == "mantic" ]; then
+		tmp_libs=libldap-common
+		# odbc
+		# libncurses
+		echo "请注意：已将libldap-2.4-2 替换为 ${tmp_libs}"
+		sudo apt-get install -y libasound2:armhf libc6:armhf libglib2.0-0:armhf libgphoto2-6:armhf libgphoto2-port12:armhf \
+			libgstreamer-plugins-base1.0-0:armhf libgstreamer1.0-0:armhf ${tmp_libs}:armhf libopenal1:armhf libpcap0.8:armhf \
+			libpulse0:armhf libsane1:armhf libudev1:armhf libusb-1.0-0:armhf libvkd3d1:armhf libx11-6:armhf libxext6:armhf \
+			libasound2-plugins:armhf ocl-icd-libopencl1:armhf libncurses6:armhf libcap2-bin:armhf libcups2:armhf \
+			libdbus-1-3:armhf libfontconfig1:armhf libfreetype6:armhf libglu1-mesa:armhf libglu1:armhf libgnutls30:armhf \
+			libgssapi-krb5-2:armhf libkrb5-3:armhf libodbc2:armhf libosmesa6:armhf libsdl2-2.0-0:armhf libv4l-0:armhf \
+			libxcomposite1:armhf libxcursor1:armhf libxfixes3:armhf libxi6:armhf libxinerama1:armhf libxrandr2:armhf \
+			libxrender1:armhf libxxf86vm1 libc6:armhf libcap2-bin:armhf # to run wine-i386 through box86:armhf on aarch64
+			exit_if_fail $? "32位依赖库安装失败"
+
+		sudo apt-get install -y libasound2:arm64 libc6:arm64 libglib2.0-0:arm64 libgphoto2-6:arm64 libgphoto2-port12:arm64 \
+			libgstreamer-plugins-base1.0-0:arm64 libgstreamer1.0-0:arm64 ${tmp_libs}:arm64 libopenal1:arm64 libpcap0.8:arm64 \
+			libpulse0:arm64 libsane1:arm64 libudev1:arm64 libunwind8:arm64 libusb-1.0-0:arm64 libvkd3d1:arm64 libx11-6:arm64 libxext6:arm64 \
+			ocl-icd-libopencl1:arm64 libasound2-plugins:arm64 libncurses6:arm64 libcups2:arm64 \
+			libdbus-1-3:arm64 libfontconfig1:arm64 libfreetype6:arm64 libglu1-mesa:arm64 libgnutls30:arm64 \
+			libgssapi-krb5-2:arm64 libkrb5-3:arm64 libodbc2:arm64 libosmesa6:arm64 libsdl2-2.0-0:arm64 libv4l-0:arm64 \
+			libxcomposite1:arm64 libxcursor1:arm64 libxfixes3:arm64 libxi6:arm64 libxinerama1:arm64 libxrandr2:arm64 \
+			libxrender1:arm64 libxxf86vm1:arm64 libc6:arm64 libcap2-bin:arm64
+			exit_if_fail $? "64位依赖库安装失败"
+			# libjpeg62-turbo:arm64 
+	fi
+
+}
+
+function sw_install() {
+	case "${CURRENT_VM_ARCH}" in
+		"arm64")
+				sudo apt-get install -y xz-utils
+				exit_if_fail $? "解压工具xz安装失败"
+
+				echo "正在解压跨CPU架构的wine32/64. . ."
+				tar -xJf ${DEB_PATH} --overwrite -C /opt/apps/
+				exit_if_fail $? "安装失败，软件包：${DEB_PATH}"
+
+				echo "正在启用 multi-arch ..."
+				dpkg --add-architecture armhf && sudo apt-get update
+				exit_if_fail $? "依赖包安装失败"
+
+				sw_install_depends
+
+				echo " 正在安装 winetricks, winetricks 用于安装wine缺失的dll文件"
+				sudo apt-get install -y winetricks
+				exit_if_fail $? "winetricks安装失败"
+
+				# mono csharp runtime: https://mirrors.ustc.edu.cn/wine/wine/wine-mono/
+				# gecko webBrowserCOM: https://blog.csdn.net/u010164190/article/details/106785069
+
+				;;
+		"amd64")
+				sudo apt-get install -y wine
+				exit_if_fail $? "依赖包安装失败"
+				;;
+		*) exit_unsupport ;;
+	esac
+}
+
+function sw_create_desktop_file() {
+	case "${CURRENT_VM_ARCH}" in
+		"arm64")
+				rm2desktop wine32.desktop
+				rm2desktop wine64.desktop
+				rm -rf /usr/share/applications/wine32.desktop
+				rm -rf /usr/share/applications/wine64.desktop
+				rm -rf /usr/bin/exec32
+				rm -rf /usr/bin/exec64
+				rm -rf /usr/bin/wine
+				rm -rf /usr/bin/wineboot
+				rm -rf /usr/bin/winecfg
+				rm -rf /usr/bin/wineserver
+				ln -s ${app_dir}/bin/wineboot		/usr/bin/wineboot
+				ln -s ${app_dir}/bin/winecfg		/usr/bin/winecfg
+				ln -s ${app_dir}/bin/wineserver	/usr/bin/wineserver
+
+				# export app_dir=/opt/apps/wine-8.9-amd64
+				echo '#!/bin/bash'																								> ./tmp/exec64
+				echo "export WINEARCH=win64"																					>>./tmp/exec64
+				echo "export WINEPREFIX=\${HOME}/.wine64"																		>>./tmp/exec64
+				echo "    echo \"WINEPREFIX=\${WINEPREFIX}\", 64位"																>>./tmp/exec64
+				echo "whoami"																									>>./tmp/exec64
+				echo 'if [ $# -eq 0 ]; then'																					>>./tmp/exec64
+				echo "    exec /usr/local/bin/box64 ${app_dir}/bin/wine64 explorer"												>>./tmp/exec64
+				echo 'else'																										>>./tmp/exec64
+				echo "    exec /usr/local/bin/box64 ${app_dir}/bin/wine64 \$@"													>>./tmp/exec64
+				echo 'fi'																										>>./tmp/exec64
+
+
+				echo '#!/bin/bash'																								> ./tmp/exec32
+				echo "export WINEARCH=win32"																					>>./tmp/exec32
+				echo "export WINEPREFIX=\${HOME}/.wine32"																		>>./tmp/exec32
+				echo "    echo \"WINEPREFIX=\${WINEPREFIX}\", 32位"																>>./tmp/exec32
+				echo "whoami"																									>>./tmp/exec32
+				echo 'if [ $# -eq 0 ]; then'																					>>./tmp/exec32
+				echo "    exec /usr/local/bin/box86 ${app_dir}/bin/wine explorer"												>>./tmp/exec32
+				echo 'else'																										>>./tmp/exec32
+				echo "    exec /usr/local/bin/box86 ${app_dir}/bin/wine \$@"													>>./tmp/exec32
+				echo 'fi'																										>>./tmp/exec32
+
+				mv -f ./tmp/exec64  /usr/bin/
+				chmod 755 /usr/bin/exec64
+				# ln -s /usr/bin/exec64	/usr/bin/wine
+
+				mv -f ./tmp/exec32  /usr/bin/
+				chmod 755 /usr/bin/exec32
+				# ln -s /usr/bin/exec32	/usr/bin/wine
+				# ln -s /usr/bin/exec64	/usr/bin/wine
+
+				# echo "为了能运行 winecfg, 需要设置 WINELOADER 环境变量"
+				# echo "export WINELOADER=/usr/bin/exec64"	>>/etc/profile
+				# source /etc/profile
+
+
+				if [ "${APP_LANGUAGE}_${APP_COUNTRY}" == "zh_CN" ]; then
+					# echo "正在复制中文字体"
+
+					# mkdir -p /home/droidvm/.wine32/drive_c/windows/Fonts
+					# mkdir -p /home/droidvm/.wine64/drive_c/windows/Fonts
+					# cp -f /usr/share/fonts/truetype/droid/NotoSansCJK-Regular.ttc /home/droidvm/.wine32/drive_c/windows/Fonts/simsun.ttc
+					# cp -f /usr/share/fonts/truetype/droid/NotoSansCJK-Regular.ttc /home/droidvm/.wine64/drive_c/windows/Fonts/simsun.ttc
+
+					echo " 正在安装 ttf-wqy-microhei 中文字体"
+					sudo apt-get install -y ttf-wqy-microhei
+					exit_if_fail $? "中文字体 ttf-wqy-microhei 安装失败"
+
+					mkdir -p /home/droidvm/.wine32/drive_c/windows/Fonts
+					mkdir -p /home/droidvm/.wine64/drive_c/windows/Fonts
+					cp -f /usr/share/fonts/truetype/wqy/wqy-microhei.ttc /home/droidvm/.wine32/drive_c/windows/Fonts/simsun.ttc
+					cp -f /usr/share/fonts/truetype/wqy/wqy-microhei.ttc /home/droidvm/.wine64/drive_c/windows/Fonts/simsun.ttc
+
+					# "Droid Sans Fallback" 或者 "Noto Sans Mono CJK SC", 或者 "WenQuanYi Micro Hei" 和 dpi
+					cat <<- EOF >  ./tmp/wine_init_config.reg
+					REGEDIT4
+					[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]
+					"DFKai-SB"="WenQuanYi Micro Hei"
+					"FangSong"="WenQuanYi Micro Hei"
+					"KaiTi"="WenQuanYi Micro Hei"
+					"Microsoft JhengHei"="WenQuanYi Micro Hei"
+					"Microsoft YaHei"="WenQuanYi Micro Hei"
+					"MingLiU"="WenQuanYi Micro Hei"
+					"SimSun"="WenQuanYi Micro Hei"
+					"PMingLiU"="WenQuanYi Micro Hei"
+					"SimHei"="WenQuanYi Micro Hei"
+					"SimKai"="WenQuanYi Micro Hei"
+					"SimSun"="WenQuanYi Micro Hei"
+
+ 
+					[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink]
+					"Lucida Sans Unicode"="WenQuanYi Micro Hei"
+					"Microsoft Sans Serif"="WenQuanYi Micro Hei"
+					"MS Sans Serif"="WenQuanYi Micro Hei"
+					"Tahoma"="WenQuanYi Micro Hei"
+					"Tahoma Bold"="WenQuanYi Micro Hei"
+					"SimSun"="WenQuanYi Micro Hei"
+					"Arial"="WenQuanYi Micro Hei"
+					"Arial Black"="WenQuanYi Micro Hei"
+					
+
+					[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Hardware Profiles\Current\Software\Fonts]
+					"LogPixels"=dword:00000096
+					EOF
+					cp -f  ./tmp/wine_init_config.reg /home/droidvm/.wine32/drive_c/wine_init_config.reg
+					cp -f  ./tmp/wine_init_config.reg /home/droidvm/.wine64/drive_c/wine_init_config.reg
+					sudo -u ${ZZ_USER_NAME} env WINEDLLOVERRIDES="mscoree,mshtml=" exec32 regedit ./tmp/wine_init_config.reg
+					exit_if_fail $? "wine32 中文字体导入失败"
+
+					sudo -u ${ZZ_USER_NAME} env WINEDLLOVERRIDES="mscoree,mshtml=" exec64 regedit ./tmp/wine_init_config.reg
+					exit_if_fail $? "wine64 中文字体导入失败"
+
+					rm -rf ./tmp/wine_init_config.reg
+				else
+					echo "非中文语言"
+
+					# 调整dpi
+					cat <<- EOF >  ./tmp/wine_init_config.reg
+					REGEDIT4
+					[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Hardware Profiles\Current\Software\Fonts]
+					"LogPixels"=dword:00000096
+					EOF
+					cp -f  ./tmp/wine_init_config.reg /home/droidvm/.wine32/drive_c/wine_init_config.reg
+					cp -f  ./tmp/wine_init_config.reg /home/droidvm/.wine64/drive_c/wine_init_config.reg
+					sudo -u ${ZZ_USER_NAME} exec32 regedit ./tmp/wine_init_config.reg
+					exit_if_fail $? "wine32 dpi设置失败"
+
+					sudo -u ${ZZ_USER_NAME} exec64 regedit ./tmp/wine_init_config.reg
+					exit_if_fail $? "wine64 dpi设置失败"
+
+					rm -rf ./tmp/wine_init_config.reg
+				fi
+
+
+				tmpfile=${DIR_DESKTOP_FILES}/wine32.desktop
+				echo "[Desktop Entry]"	> ${tmpfile}
+				echo "Encoding=UTF-8"	>>${tmpfile}
+				echo "Version=0.9.4"	>>${tmpfile}
+				echo "Type=Application"	>>${tmpfile}
+				echo "Categories=System">>${tmpfile}
+				echo "MimeType=application/x-dosexec;application/x-ms-dos-executable;application/x-ms-shortcut;application/x-msi;application/vnd.microsoft.portable-executable"	>>${tmpfile}
+				echo "Name=wine32"		>>${tmpfile}
+				echo "Exec=exec32 %f"	>> ${tmpfile}
+				cp2desktop ${tmpfile}
+
+
+				tmpfile=${DIR_DESKTOP_FILES}/wine64.desktop
+				echo "[Desktop Entry]"	> ${tmpfile}
+				echo "Encoding=UTF-8"	>>${tmpfile}
+				echo "Version=0.9.4"	>>${tmpfile}
+				echo "Type=Application"	>>${tmpfile}
+				echo "Categories=System">>${tmpfile}
+				echo "MimeType=application/x-dosexec;application/x-ms-dos-executable;application/x-ms-shortcut;application/x-msi;application/vnd.microsoft.portable-executable"	>>${tmpfile}
+				echo "Name=wine64"		>>${tmpfile}
+				echo "Exec=exec64 %f"	>> ${tmpfile}
+				cp2desktop ${tmpfile}
+
+				tmpfile=${DIR_DESKTOP_FILES}/cmd.desktop
+				echo "[Desktop Entry]"	> ${tmpfile}
+				echo "Encoding=UTF-8"	>>${tmpfile}
+				echo "Version=0.9.4"	>>${tmpfile}
+				echo "Type=Application"	>>${tmpfile}
+				echo "Categories=System">>${tmpfile}
+				echo "Name=CMD"			>>${tmpfile}
+				echo "Exec=exec64 cmd"	>> ${tmpfile}
+				cp2desktop ${tmpfile}
+
+
+				echo "请使用 exec32/exec64 指令运行windows程序, 比如:"
+				echo "exec64 cmd"
+				echo "exec64 explorer"
+				echo "exec64 taskmgr"
+				echo "exec64 winecfg"
+
+				echo "wine配置程序："
+				echo "exec64 winecfg"
+				;;
+		"amd64")
+				# todo
+				echo "桌面快捷方式待创建。。。"
+				;;
+		*) exit_unsupport ;;
+	esac
+}
+
+if [ "${action}" == "卸载" ]; then
+	echo "暂不支持卸载"
+	exit 1
+else
+	sw_download
+	sw_install
+	sw_create_desktop_file
+fi
