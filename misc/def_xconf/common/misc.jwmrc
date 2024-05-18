@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<JWM>
+
+	<!-- 配色方案 -->
+	<Include>exec:/exbin/tools/misc/dyn_menu/getColorscheme.sh</Include>
+
+    <!-- 
+    热键绑定: https://joewing.net/projects/jwm/config.html  XStringToKeysym  按钮英文名称, SHELL中查看keycode/keysym的工具: xev
+    https://www.antixforum.com/forums/topic/making-jwm-desktop-look-more-modern-mx-linux-like/
+    主键：
+    A == Alt
+    C == Control
+    S == Shift
+    H == Hyper
+    M == Meta
+    P == Super # 也就是Win 键   <What is the Mod4+D shortcut key?>  https://askubuntu.com/questions/120928/what-is-the-mod4d-shortcut-key
+    --> 
+    <Key mask="CA" key="#">desktop#</Key>
+    <Key mask="4" key="d">showdesktop</Key>
+    <Key mask="C" key="Tab">nextstacked</Key>
+    <Key mask="A" key="F4">close</Key>
+    <Key mask="A" key="space">window</Key>
+
+    <DoubleClickSpeed>400</DoubleClickSpeed>
+    <DoubleClickDelta>2</DoubleClickDelta>
+    <FocusModel>click</FocusModel>
+    <SnapMode distance="10">border</SnapMode>
+    <MoveMode>opaque</MoveMode>
+    <ResizeMode>opaque</ResizeMode>
+
+    <Desktops width="3" height="1">
+        <Desktop key="1" name="工作区1　　　　　　　　　　　　" />
+        <Desktop key="2" name="工作区2" />
+        <Desktop key="2" name="工作区3" />
+    </Desktops>
+
+    <IconPath>~/.icons</IconPath>
+    <IconPath>/usr/share/icons</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/actions</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/apps</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/categories</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/devices</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/emblems</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/places</IconPath>
+    <IconPath>/usr/share/icons/gnome/256x256/status</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/actions</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/animations</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/apps</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/categories</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/devices</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/emblems</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/places</IconPath>
+    <IconPath>/usr/share/icons/gnome/32x32/status</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/actions</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/apps</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/categories</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/devices</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/emblems</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/places</IconPath>
+    <IconPath>/usr/share/icons/gnome/scalable/status</IconPath>
+    <IconPath>/usr/share/icons/hicolor/256x256/apps</IconPath>
+    <IconPath>/usr/share/icons/hicolor/256x256/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/actions</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/apps</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/categories</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/devices</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/emblems</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/hicolor/32x32/status</IconPath>
+    <IconPath>/usr/share/icons/hicolor/512x512/apps</IconPath>
+    <IconPath>/usr/share/icons/hicolor/512x512/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/actions</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/apps</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/categories</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/devices</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/emblems</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/mimetypes</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/places</IconPath>
+    <IconPath>/usr/share/icons/hicolor/scalable/status</IconPath>
+    <IconPath>/usr/share/icons</IconPath>
+    <IconPath>/usr/share/pixmaps</IconPath>
+    <IconPath>/usr/local/lib/X11/mini-icons</IconPath>
+    <IconPath>/usr/local/lib/X11/pixmaps</IconPath>
+    <IconPath>/usr/local/share/pixmaps</IconPath>
+    <IconPath>/var/lib/flatpak/exports/share/icons/hicolor/24x24/apps</IconPath>
+    <IconPath>/var/lib/flatpak/exports/share/icons/hicolor/48x48apps</IconPath>
+    <IconPath>/var/lib/flatpak/exports/share/icons/hicolor/96x96/apps</IconPath>
+    <IconPath>/var/lib/flatpak/exports/share/icons/hicolor/128x128/apps</IconPath>
+    <IconPath>/usr/local/share/jwm</IconPath>
+
+</JWM>

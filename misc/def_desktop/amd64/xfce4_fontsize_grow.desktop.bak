@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.9.4
+Type=Application
+Name=调大字体
+Comment=其实是将xfce的dpi调高到180
+Exec=/exbin/tools/misc/helper/fontsize_grow.sh
+Terminal=true
+

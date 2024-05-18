@@ -1,0 +1,299 @@
+<?xml version="1.0"?>
+<JWM>
+        <Menu label="使用说明">
+            <Program label="打开QQ加入交流群" >echo "#openQQqun" > ${NOTIFY_PIPE}</Program>
+            <Program label="droidvm说明书">notepad /exbin/doc/readme.txt</Program>
+            <Program label="droidvm软件开发手册">notepad /exbin/doc/SDM.txt</Program>
+            <Menu label="查看版本号">
+                <Program label="查看rootfs版本">/exbin/tools/vm_show_rootfs_ver.sh</Program>
+                <Program label="查看安装包版本">notepad /exbin/apkver.txt</Program>
+            </Menu>
+            <Menu label="鼠标说明">
+                <Program label="鼠标左键=音量减"></Program>
+                <Program label="鼠标右键=音量加"></Program>
+                <Program label="鼠标右键=屏幕外往里滑"></Program>
+                <Program label="鼠标右键=导航返回按钮"></Program>
+                <Separator/>
+                <Program label="还可以切换成触控模式"></Program>
+            </Menu>
+            <Program label="简易教程">pcmanfm /exbin/doc/教程</Program>
+            <Menu label="版权声明">
+                <Program label="droidvm版权声明">notepad /exbin/doc/license.txt</Program>
+                <Menu label="开源软件许可协议">
+                    <Program label="开源软件许可证_GPL2.txt">notepad /exbin/doc/开源软件许可证_GPL2.txt</Program>
+                    <Program label="开源软件许可证_MIT.txt" >notepad /exbin/doc/开源软件许可证_MIT.txt</Program>
+                    <Program label="开源软件许可证_Apache2.0.txt" >notepad /exbin/doc/开源软件许可证_Apache2.0.txt</Program>
+                </Menu>
+            </Menu>
+        </Menu>
+        <Menu label="APP控制">
+            <!--Program label="linux屏幕键盘">/exbin/tools/vm_show_keyboard.sh</Program-->
+            <Menu label="向安卓申请权限">
+                <Program label="申请访问SD卡和外接U盘">/exbin/tools/vm_req_sdcard.sh</Program>
+                <!--Program label="申请访问SD卡和外接U盘">echo "#req_sdcard_rw" > ${NOTIFY_PIPE}</Program-->
+                <!--Program label="自动申请USB设备的访问权限"></Program-->
+                <Separator/>
+                <Program label="识别 SDCard">/exbin/tools/vm_scan_sdcard.sh</Program>
+                <Program label="识别外接U盘">/exbin/tools/vm_scan_udisk.sh</Program>
+                <Separator/>
+                <Program label="申请后台运行">echo "#req_runbackgound" > ${NOTIFY_PIPE}</Program>
+            </Menu>
+            <Program label="启动logcat查看日志">/exbin/tools/vm_show_droidlog.sh</Program>
+            <Menu label="键盘鼠标控制">
+                <Program label="键盘鼠标模拟说明">notepad /exbin/doc/readme_input.txt</Program>
+                <Program label="记录键鼠事件 (重启停录)">echo "#log_input_event" > ${NOTIFY_PIPE}</Program>
+                <Menu label="独占鼠标">
+                    <Program label="开启　　"   >echo "#grab_mouse_on" > ${NOTIFY_PIPE}</Program>
+                    <Program label="关闭　　"   >echo "#grab_mouse_ff" > ${NOTIFY_PIPE}</Program>
+                </Menu>
+                <Menu label="鼠标操控模式">
+                    <Program label="点哪就是哪" >echo "#mouse_mode_0" > ${NOTIFY_PIPE}</Program>
+                    <Program label="触控模式"   >echo "#mouse_mode_1" > ${NOTIFY_PIPE}</Program>
+                </Menu>
+                <Menu label="鼠标移速">
+                    <Program label="1.0"   >echo "#mouse_speed 1.0" > ${NOTIFY_PIPE}</Program>
+                    <Program label="1.5"   >echo "#mouse_speed 1.5" > ${NOTIFY_PIPE}</Program>
+                    <Program label="2.0(*默认倍数)">echo "#mouse_speed 2.0" > ${NOTIFY_PIPE}</Program>
+                    <Program label="2.5"   >echo "#mouse_speed 2.5" > ${NOTIFY_PIPE}</Program>
+                    <Program label="3.0"   >echo "#mouse_speed 3.0" > ${NOTIFY_PIPE}</Program>
+                    <Program label="3.5"   >echo "#mouse_speed 3.5" > ${NOTIFY_PIPE}</Program>
+                    <Program label="4.0"   >echo "#mouse_speed 4.0" > ${NOTIFY_PIPE}</Program>
+                    <Program label="4.5"   >echo "#mouse_speed 4.5" > ${NOTIFY_PIPE}</Program>
+                    <Program label="5.0"   >echo "#mouse_speed 5.0" > ${NOTIFY_PIPE}</Program>
+                </Menu>
+                <!--Menu label="避免鼠标单击变双击">
+                    <Program label="启用(默认启用)　　"   >echo "#avoid_mouse_dbclick_on" > ${NOTIFY_PIPE}</Program>
+                    <Program label="停用　　"   >echo "#avoid_mouse_dbclick_ff" > ${NOTIFY_PIPE}</Program>
+                </Menu-->
+            </Menu>
+            <Menu label="游戏手柄模拟">
+                <Program label="　　启动　　">echo "#vmCreateWebGamePad" > ${NOTIFY_PIPE}</Program>
+            </Menu>
+            <Separator/>
+            <Menu label="安卓端自启动进程">
+                <Menu label="VIRGL服务进程">
+                    <Program label="自动启动">/exbin/tools/vm_config_virgl_srv.sh start</Program>
+                    <Program label="不要启动">/exbin/tools/vm_config_virgl_srv.sh stop</Program>
+                </Menu>
+                <Menu label="声音播放服务">
+                    <Program label="自动启动">/exbin/tools/vm_config_audio_srv.sh start</Program>
+                    <Program label="不要启动(省CPU)">/exbin/tools/vm_config_audio_srv.sh stop</Program>
+                </Menu>
+                <Menu label="网口获取服务">
+                    <Program label="自动启动">/exbin/tools/vm_config_ifbrg_srv.sh start</Program>
+                    <Program label="不要启动">/exbin/tools/vm_config_ifbrg_srv.sh stop</Program>
+                </Menu>
+            </Menu>
+            <Menu label="启动等待">
+                <Program label="总是等待 3秒">/exbin/tools/vm_config_set_bootwait.sh 3</Program>
+                <Program label="不要等待，直接启动">/exbin/tools/vm_config_set_bootwait.sh stop</Program>
+            </Menu>
+            <Menu label="系统状态栏">
+                <Program label="显示系统状态栏" >echo "#show_sys_statusbar" > ${NOTIFY_PIPE}</Program>
+                <Program label="隐藏" >echo "#hide_sys_statusbar" > ${NOTIFY_PIPE}</Program>
+            </Menu>
+            <Menu label="底部按钮面板">
+                <Program label="显示按钮面板" >echo "#show_btn_panel" > ${NOTIFY_PIPE}</Program>
+                <Program label="隐藏" >echo "#hide_btn_panel" > ${NOTIFY_PIPE}</Program>
+            </Menu>
+        </Menu>
+        <Menu label="远程控制">
+            <Program label="查看本机IP地址">/exbin/tools/vm_showip.sh</Program>
+            <Program label="启动远程协助">lxterminal -e /exbin/tools/vm_natshell2.sh</Program>
+            <Separator/>
+            <Menu label="通过WebXpra(常规信道)">
+                <Program label="启动xpra(html=on)">/exbin/tools/vm_xpra_control.sh start</Program>
+                <Program label="停止xpra">/exbin/tools/vm_xpra_control.sh stop</Program>
+            </Menu>
+            <Menu label="通过WebTTY(常规信道)">
+                <Program label="启动ttyd(支持文件传送)">/exbin/tools/vm_webtty_control.sh start</Program>
+                <Program label="停止ttyd"       >/exbin/tools/vm_webtty_control.sh stop</Program>
+            </Menu>
+            <Separator/>
+            <Menu label="通过ssh(加密信道)">
+                <Program label="启动sshd　　">lxterminal -e /exbin/tools/vm_ssh_control.sh start</Program>
+                <Program label="停止sshd　　">lxterminal -e /exbin/tools/vm_ssh_control.sh stop</Program>
+            </Menu>
+            <Menu label="通过WebCtrl(常规信道)">
+                <Program label="启动WebCtrl">/exbin/tools/vm_WebCtrl.sh start</Program>
+                <Program label="停止WebCtrl">/exbin/tools/vm_WebCtrl.sh stop</Program>
+            </Menu>
+            <Menu label="通过WebVnc(常规信道)">
+                <Program label="启动网页远控( 800x600)" >/exbin/tools/vm_WebVnc.sh start 800x600</Program>
+                <Program label="启动网页远控(1024x768)" >/exbin/tools/vm_WebVnc.sh start 1024x768</Program>
+                <Program label="启动网页远控(1280x1024)">/exbin/tools/vm_WebVnc.sh start 1280x1024</Program>
+                <Program label="启动网页远控(1920x720)" >/exbin/tools/vm_WebVnc.sh start 1920x720</Program>
+                <Program label="启动网页远控(1920x1280)">/exbin/tools/vm_WebVnc.sh start 1920x1280</Program>
+                <Separator/>
+                <Program label="停止网页远控">/exbin/tools/vm_WebVnc.sh stop</Program>
+            </Menu>
+            <Menu label="通过X11屏幕转发">
+                <Program label="显示到其它XServer">/exbin/tools/vm_x11_redirect_to.sh start</Program>
+                <Program label="停止X11 Redirect" >/exbin/tools/vm_x11_redirect_to.sh stop</Program>
+            </Menu>
+            <Menu label="通过telnet(常规信道)">
+                <Program label="启动telnetd　　">/exbin/tools/vm_telnet_control.sh start</Program>
+                <Program label="停止telnetd　　">/exbin/tools/vm_telnet_control.sh stop</Program>
+                <Program label="启动安卓端telnetd">/exbin/tools/vm_telnetd_for_droid.sh</Program>
+            </Menu>
+        </Menu>
+        <Menu label="文件共享">
+            <Menu label="通过ftp(常规信道)">
+                <Program label="启动ftpd以共享目录 ~/)"     >/exbin/tools/vm_fileshare.sh start ~/</Program>
+                <Program label="启动ftpd以共享目录 /exbin)" >/exbin/tools/vm_fileshare.sh start /exbin</Program>
+                <Program label="停止ftpd　　">/exbin/tools/vm_fileshare.sh stop</Program>
+            </Menu>
+            <Menu label="通过dav(常规信道)">
+                <Program label="启动PyWebDAV3以共享目录 ~/)"    >/exbin/tools/vm_fileshare_dav.sh start ~/</Program>
+                <Program label="启动PyWebDAV3以共享目录 /exbin)">/exbin/tools/vm_fileshare_dav.sh start /exbin</Program>
+                <Program label="停止PyWebDAV3　　">/exbin/tools/vm_fileshare_dav.sh stop</Program>
+            </Menu>
+        </Menu>
+        <Menu label="控制台">
+            <Menu label="运行指令">
+                <Program label="使用Bash运行指令">lxterminal -e bash</Program>
+                <Program label="启动安卓端控制台">lxterminal -e droidexec sh</Program>
+            </Menu>
+            <!-- <Menu label="wine管理">
+                <Program label="重置wine">/exbin/tools/vm_wine_reset.sh</Program>
+            </Menu> -->
+
+            <Menu label="自启动项">
+                <Menu label="回收站进程">
+                    <Program label="自动启动"       >/exbin/tools/vm_config_trash_srv.sh start</Program>
+                    <Program label="不要启动(省CPU)">/exbin/tools/vm_config_trash_srv.sh stop</Program>
+                </Menu>
+                <Menu label="启动代码">
+                    <Program label="添加自启动代码">notepad /exbin/tools/vm_onZerogo.sh</Program>
+                    <Separator/>
+                    <Program label="更新系统启动代码" >/exbin/tools/vm_updateBootScript.sh</Program>
+                </Menu>
+            </Menu>
+            <Program label="更新软件管家(需重启)" >/exbin/tools/vm_updateBootScript.sh</Program>
+            <Program label="升级虚拟电脑(需重启)" >/exbin/tools/vm_updateApk.sh</Program>
+            <Menu label="ndktools">
+                <Program label="重新下载ndktools" >/exbin/tools/vm_updateExtools.sh</Program>
+            </Menu>
+            <Menu label="proot管理">
+                <Program label="使用  termux分支的proot(支持box86)" >/exbin/tools/vm_config_set_prootname.sh termux-box86</Program>
+                <Program label="使用userland分支的proot(支持box86)" >/exbin/tools/vm_config_set_prootname.sh userland-box86</Program>
+                <!-- <Program label="使用userland分支的proot(支持ndk)"   >/exbin/tools/vm_config_set_prootname.sh userland-ndk</Program> -->
+                <Program label="使用支持user-binfmt的proot"         >/exbin/tools/vm_config_set_prootname.sh userbinfmt</Program>
+                <Separator/>
+                <Program label="以宿主根目录为根目录(可支持ndk-vulkan)"			>/exbin/tools/vm_config_set_vmrootfspath.sh sameAsHost</Program>
+                <Program label="以解压缩路径为根目录(仅支持ndk-opengles)"		>/exbin/tools/vm_config_set_vmrootfspath.sh unzip_path</Program>
+            </Menu>
+            <Menu label="proot-sysvipc功能">
+                <Program label="如果有就开启">/exbin/tools/vm_sysvipcflag.sh write</Program>
+                <Program label="关">/exbin/tools/vm_sysvipcflag.sh erase</Program>
+            </Menu>
+            <Menu label="系统">
+                <Program label="重启"                      >/exbin/tools/vm_OSReboot.sh</Program>
+                <Program label="关机"                      >/exbin/tools/vm_OSShutdown.sh</Program>
+                <Program label="重新安装系统"              >/exbin/tools/vm_OSReinstall.sh</Program>
+                <Separator/>
+                <Menu label="备份还原">
+                    <Program label="备份(需要重启)"            >/exbin/tools/vm_OSBackup.sh</Program>
+                    <Program label="还原(需要重启)"            >/exbin/tools/vm_OSRestore.sh</Program>
+                </Menu>
+                <!-- <Menu label="重启至其它系统">
+                    <Include>/exbin/jwm_menu_oslist</Include>
+                </Menu> -->
+                <Separator/>
+				<Menu label="调试相关">
+					<Program label=" -调试标记开- ">/exbin/tools/vm_debugflag.sh write</Program>
+					<Program label=" -调试标记关- ">/exbin/tools/vm_debugflag.sh erase</Program>
+                    <Separator/>
+					<Program label=" -查看当前kc- ">/exbin/tools/vm_config_kc.sh    </Program>
+					<Program label=" -强制使用kc- ">/exbin/tools/vm_config_kc.sh 255</Program>
+				</Menu>
+            </Menu>
+            <Menu label="下载地址">
+                <Program label="查看当前下载地址                      " >/exbin/tools/vm_set_app_dlserver.sh show</Program>
+                <Program label="设置为腾讯云            (速度快，稳定)" >/exbin/tools/vm_set_app_dlserver.sh tencent</Program>
+    			<Include>exec:/exbin/tools/misc/dyn_menu/debug_dlsrv_list.sh</Include>
+            </Menu>
+
+        </Menu>
+        <Separator/>
+        <Menu label="显示设置">
+            <Menu label="桌面模式">
+                <Program label="手机　　　　　　">/exbin/tools/vm_setuimode.sh phone 1</Program>
+                <Program label="电脑(DPI值更小)" >/exbin/tools/vm_setuimode.sh pc    1</Program>
+                <Program label="重置桌面模式"    >/exbin/tools/vm_resetuimode.sh</Program>
+            </Menu>
+			<Include>exec:/exbin/tools/misc/dyn_menu/xserverOrder.sh</Include>
+            <Menu label="显示风格">
+                <Menu label="配色方案">
+                    <Program label="亮色为主">/exbin/tools/vm_set_color_scheme.sh light</Program>
+                    <Program label="暗色为主">/exbin/tools/vm_set_color_scheme.sh dark</Program>
+                </Menu>
+                <Menu label="透明效果">
+                    <Program label="开启"       >/exbin/tools/vm_config_opacity.sh on</Program>
+                    <Program label="关闭(省CPU)">/exbin/tools/vm_config_opacity.sh off</Program>
+                </Menu>
+                <Program label="修改图标样式">/exbin/tools/vm_config_icon.sh</Program>
+                <Program label="修改GTK2主题">/exbin/tools/vm_config_theme.sh</Program>
+                <Menu label="鼠标指针大小">
+                    <Program label="　16　" >/exbin/tools/vm_set_cursor_size.sh 16</Program>
+                    <Program label="　96　" >/exbin/tools/vm_set_cursor_size.sh 96</Program>
+                </Menu>
+                <Program label="字体存放目录">/exbin/tools/vm_open_fonts_dir.sh</Program>
+            </Menu>
+            <Menu label="缩放">
+                <Menu label="屏幕DPI">
+                    <Program label="　96　" >/exbin/tools/vm_set_dpi.sh 96</Program>
+                    <Program label="112"    >/exbin/tools/vm_set_dpi.sh 112</Program>
+                    <Program label="128"    >/exbin/tools/vm_set_dpi.sh 128</Program>
+                    <Program label="144"    >/exbin/tools/vm_set_dpi.sh 144</Program>
+                    <Program label="150(初始值)" >/exbin/tools/vm_set_dpi.sh 150</Program>
+                    <Program label="160"    >/exbin/tools/vm_set_dpi.sh 160</Program>
+                    <Program label="180"    >/exbin/tools/vm_set_dpi.sh 180</Program>
+                    <Program label="200"    >/exbin/tools/vm_set_dpi.sh 200</Program>
+                    <Program label="220"    >/exbin/tools/vm_set_dpi.sh 220</Program>
+                    <Program label="250"    >/exbin/tools/vm_set_dpi.sh 250</Program>
+                    <Program label="300"    >/exbin/tools/vm_set_dpi.sh 300</Program>
+                </Menu>
+                <Menu label="字体大小">
+                    <Program label="　10　" >/exbin/tools/vm_set_fontsize.sh 10</Program>
+                    <Program label="12(初始值)"  >/exbin/tools/vm_set_fontsize.sh 12</Program>
+                    <Program label="14"     >/exbin/tools/vm_set_fontsize.sh 14</Program>
+                    <Program label="16"     >/exbin/tools/vm_set_fontsize.sh 16</Program>
+                    <Program label="18"     >/exbin/tools/vm_set_fontsize.sh 18</Program>
+                    <Program label="20"     >/exbin/tools/vm_set_fontsize.sh 20</Program>
+                </Menu>
+                <Separator/>
+                <Program label="全屏显示" >/exbin/tools/vm_fullscreen.sh on</Program>
+                <Program label="取消全屏" >/exbin/tools/vm_fullscreen.sh off</Program>
+            </Menu>
+            <Menu label="屏幕投射">
+                <Program label="DLNA异端播放　　　　　　　　">gxmessage -title "异端播放" "DLNA仅适用于多媒体,不具备屏幕显示所要求的实时性, &#xA;播放端各厂家对实时流媒体协议的支持度又不一样, &#xA;经多次测试后决定放弃开发&#xA;" -center</Program>
+                <Program label="WIFI无线显示器　　　　　　　">gxmessage -title "无线显示" "手机的投屏功能打开时, &#xA;软件会检测到外接显示器, 并自动把画面全屏切换过去&#xA;&#xA;你家的电视机、win10电脑一般都支持无线投屏功能&#xA;" -center</Program>
+                <Program label="外接typec-hdmi显示器　　　　">gxmessage -title "外接显示" "手机usb接口接入可识别的Type-C/DP-hdmi显示器时(带DP Alt协议), &#xA;软件会检测到外接显示器, 并自动把画面全屏切换过去&#xA;&#xA;请注意手机和投屏线的typec接口都分为全功能typec和半功能typec&#xA;" -center</Program>
+            </Menu>
+            <Menu label="屏幕转发">
+                <Program label="显示到其它XServer">/exbin/tools/vm_x11_redirect_to.sh start</Program>
+                <Program label="停止X11 Redirect" >/exbin/tools/vm_x11_redirect_to.sh stop</Program>
+            </Menu>
+            <Menu label="桌面进程">
+                <Program label="重启文件管理器">/exbin/tools/vm_refresh.sh</Program>
+                <Restart label="重启窗口管理器" icon="restart.png"/>
+                <Exit    label="退出窗口管理器" confirm="true" icon="quit.png"/>
+            </Menu>
+        </Menu>
+        <Menu label="快速启动">
+            <Program label="cmd">cmd</Program>
+            <Program label="启动记事本">notepad</Program>
+            <Program label="安装软件"  >/exbin/tools/zzswmgr/zzswmgr.py</Program>
+            <Program label="启动输入法">/exbin/tools/vm_start_inputmethod.sh</Program>
+            <Program label="任务管理器">lxtask</Program>
+            <Separator/>
+            <Menu label="启动安卓端应用">
+                <Program label="用adb在虚拟电脑中启动Bilibili" >/exbin/tools/vm_createAndroidVirtDisplay.sh tv.danmaku.bili/.MainActivityV2</Program>
+                <Program label="用adb在虚拟电脑中启动抖音"     >/exbin/tools/vm_createAndroidVirtDisplay.sh com.ss.android.ugc.aweme/.splash.SplashActivity</Program>
+                <Program label="用adb在虚拟电脑中启动微信"     >/exbin/tools/vm_createAndroidVirtDisplay.sh com.tencent.mm/.ui.LauncherUI</Program>
+                <Program label="用adb在虚拟电脑中启动QQ"       >/exbin/tools/vm_createAndroidVirtDisplay.sh com.tencent.mobileqq/.activity.SplashActivity</Program>
+            </Menu>
+        </Menu>
+        <Desktops   label="切换工作区" />
+</JWM>

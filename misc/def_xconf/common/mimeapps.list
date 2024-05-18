@@ -1,0 +1,13 @@
+[Added Associations]
+text/plain=l3afpad.desktop;
+application/xml=l3afpad.desktop;
+
+[Default Applications]
+text/plain=l3afpad.desktop
+application/xml=l3afpad.desktop
+application/vnd.debian.binary-package=zzswmgr.desktop
+application/x-dosexec=winexe.desktop
+application/x-ms-dos-executable=winexe.desktop
+application/x-ms-shortcut=winexe.desktop
+application/x-msi=winexe.desktop
+application/vnd.microsoft.portable-executable=winexe.desktop

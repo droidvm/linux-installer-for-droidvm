@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<JWM>
+
+    <!-- Theme --> 
+    <WindowStyle> 
+        <Active> 
+            <Foreground>gray20</Foreground> 
+            <Background>#cccac5</Background> 
+            <Outline>#3C99C2</Outline> 
+        </Active> 
+        
+        <Foreground>gray20</Foreground> 
+        <Background>#cccac5</Background> 
+        <Outline>#3C99C2</Outline> 
+    </WindowStyle> 
+
+    <MenuStyle> 
+        <Foreground>gray20</Foreground> 
+        <Background>#EEEEEE</Background> 
+        <Outline>#EEEEEE</Outline>
+        <Active>
+            <Foreground>gray20</Foreground> 
+            <Background>#90C8F6</Background> 
+        </Active>
+        <Opacity>0.1</Opacity>
+    </MenuStyle> 
+
+    <PopupStyle enabled="true">
+        <Outline>black</Outline> 
+        <Foreground>black</Foreground> 
+        <Background>#EEEEEE</Background> 
+    </PopupStyle>
+
+    <TrayStyle> 
+        <Active>
+            <Foreground>gray20</Foreground> 
+            <Background>#F8F8F8</Background> 
+        </Active>
+        <Foreground>gray20</Foreground> 
+        <Background>#EEEEEE</Background> 
+    </TrayStyle>
+
+    <TaskListStyle> 
+        <Active>
+            <Foreground>gray20</Foreground> 
+            <Background>#F8F8F8</Background> 
+        </Active>
+        
+        <Foreground>gray20</Foreground> 
+        <Background>#EEEEEE</Background> 
+    </TaskListStyle> 
+
+</JWM>

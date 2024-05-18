@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.9.4
+Type=Application
+Name=LX终端
+Terminal=false
+Icon=/exbin/ic_terminal.png
+Categories=System;
+Exec=lxterminal -e bash
+Path=~/
