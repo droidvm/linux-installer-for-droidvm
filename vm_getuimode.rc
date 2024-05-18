@@ -1,0 +1,8 @@
+if [ -f ${PATHUIMODE} ]; then
+    read tmpuimode < ${PATHUIMODE}
+    if [ "$tmpuimode" == "" ]; then
+        tmpuimode=phone
+    fi
+fi
+
+export uimode=${tmpuimode}
