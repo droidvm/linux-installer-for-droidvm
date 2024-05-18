@@ -1,0 +1,63 @@
+#!/bin/bash
+echo "当前脚本: $0"
+ls -al $0
+echo ""
+echo "欢迎使用小型qemu-linux"
+echo "结合虚拟电脑app，您可以在qemu中通过usbip指令访问安卓端usb设备"
+echo ""
+echo "  内核版本：主线linux-6.6，用build_mylinux脚本编译"
+echo "核心文件组：基于ubuntu-base-rootfs创建，可以使用apt指令安装软件"
+echo "如需将apt软件仓库换成国内的，请运行: /zz_change_repo"
+echo ""
+
+function exit_if_fail() {
+	rlt_code=$1
+	fail_msg=$2
+	if [ $rlt_code -ne 0 ]; then
+	echo -e "错误码: ${rlt_code}\n${fail_msg}"
+	# read -s -n1 -p 按任意键退出
+	exit $rlt_code
+	fi
+}
+
+
+export HOME=/root
+export TERM=xterm-color
+export HOSTNAME=`cat /etc/hostname`
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+hostname $HOSTNAME
+# export PS1='\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+mount -t proc proc /proc
+exit_if_fail $? "/proc 目录挂载失败"
+
+mount -t sysfs none /sys
+exit_if_fail $? "/sys 目录挂载失败"
+
+# 挂载qemu共享目录
+mkdir -p /mnt/shared
+mount -t 9p -o trans=virtio,version=9p2000.L hostdir /mnt/shared
+if [ $? -eq 0 ]; then
+	echo "共享目录 /mnt/shared 已挂载"
+
+	if [ -x /mnt/shared/autorun.sh ]; then
+		echo "正在调用 /mnt/shared/autorun.sh"
+		/mnt/shared/autorun.sh
+
+		if [ -f /mnt/shared/autorun.rlt ]; then
+			. /mnt/shared/autorun.rlt
+		fi
+
+		if [ "$AUTO_POWEROFF" != "" ]; then
+			exit
+		fi
+	else
+		echo "无法调用 /mnt/shared/autorun.sh => 启动 /bin/bash"
+	fi
+fi
+
+
+echo ""
+exec /bin/bash
+
+

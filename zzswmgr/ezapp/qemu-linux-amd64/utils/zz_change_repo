@@ -1,0 +1,26 @@
+#!/bin/bash
+
+function exit_if_fail() {
+	rlt_code=$1
+	fail_msg=$2
+	if [ $rlt_code -ne 0 ]; then
+	echo -e "错误码: ${rlt_code}\n${fail_msg}"
+	# read -s -n1 -p 按任意键退出
+	exit $rlt_code
+	fi
+}
+
+echo "正在将常见根证书添加到系统可信证书列表"
+#apt update
+# apt install -y ca-certificates
+dpkg -i /mnt/shared/pre_download_debs/*.deb
+exit_if_fail $? "常用ca根证书安装失败"
+
+cp -f /etc/apt/sources.list    /etc/apt/sources.list.ubuntu
+exit_if_fail $? "软件仓库切换失败"
+cp -f /etc/apt/sources.list.cn.amd64 /etc/apt/sources.list
+exit_if_fail $? "软件仓库切换失败"
+echo "apt软件仓库已切换为国内仓库"
+
+apt update
+exit_if_fail $? "仓库切换后，获取软件列表失败"

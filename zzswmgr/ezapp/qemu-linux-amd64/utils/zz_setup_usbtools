@@ -1,0 +1,87 @@
+#!/bin/bash
+
+function exit_if_fail() {
+	rlt_code=$1
+	fail_msg=$2
+	if [ $rlt_code -ne 0 ]; then
+	echo -e "错误码: ${rlt_code}\n${fail_msg}"
+	# read -s -n1 -p 按任意键退出
+	exit $rlt_code
+	fi
+}
+
+# dpkg -i /var/cache/pre_download_debs/*.deb
+apt install -y udev wget usb.ids usbutils
+exit_if_fail $? "软件安装失败"
+
+mkdir -p /usr/share/hwdata 2>/dev/null
+ln -sf /var/lib/usbutils/usb.ids /usr/share/hwdata/usb.ids
+
+apt-get clean
+
+
+
+
+
+
+
+
+
+
+
+
+# echo "正在将常见根证书添加到系统可信证书列表"
+# apt update
+# apt install -y ca-certificates
+# exit_if_fail $? "常用ca根证书安装失败"
+
+# cp -f /etc/apt/sources.list    /etc/apt/sources.list.ubuntu
+# exit_if_fail $? "软件仓库切换失败"
+# cp -f /etc/apt/sources.list.cn.amd64 /etc/apt/sources.list
+# exit_if_fail $? "软件仓库切换失败"
+# echo "apt软件仓库已切换为国内仓库"
+
+# apt update
+# exit_if_fail $? "仓库切换后，获取软件列表失败"
+
+# # apt install -y udev usbutils usb.ids android-tools-adb net-tools pciutils wget x11-apps
+# apt install -y udev usbutils wget
+# exit_if_fail $? "软件安装失败"
+
+
+# mkdir -p /usr/share/hwdata 2>/dev/null
+# ln -sf /var/lib/usbutils/usb.ids /usr/share/hwdata/usb.ids
+
+# # udevadm monitor --env
+
+
+# # apt install -y kmod wget net-tools inetutils-ping usbutils linux-tools-common linux-tools-6.2.0-37-generic linux-cloud-tools-6.2.0-37-generic
+
+# # udev                  #udevadm
+# # kmod                  #内核模块操作指令，如 insmod, lsmod, modprobe
+# # command-not-found     #输入未安装的指令时，会提示指令所在的软件包名
+# # usbutils usb.ids      #lsusb
+# # pciutils              #lspci
+# # kmod                  #modprobe
+# # linux-tools-common linux-tools-6.2.0-37-generic linux-cloud-tools-6.2.0-37-generic    #usbip
+# # x11-apps              #一些x11程序示例，比如 xclock
+# # usb.ids               #/var/lib/usbutils/usb.ids
+# # android-tools-adb     #adb
+
+
+# # # 复制编译内核时生成的 内核密相关模块
+# # cp -f  /lib/modules/6.2.0/kernel/drivers/usb/usbip/*.ko  /lib/modules/
+# # cp -f  /lib/modules/6.2.0/kernel/drivers/usb/serial/*.ko /lib/modules/
+
+# # # usbip内核模块
+# # modprobe usbip-core
+# # modprobe vhci-hcd
+# # modprobe usbip_host
+
+# # # usb转串口的驱动(内核模块的)
+# # modprobe ch341
+
+
+
+# apt-get clean
+
