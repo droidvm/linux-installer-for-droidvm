@@ -1,0 +1,81 @@
+#!/bin/bash
+
+SWNAME=android-ndk
+DEB_PATH=./downloads/${SWNAME}.zip
+DIR_DESKTOP_FILES=/usr/share/applications
+DSK_FILE=${SWNAME}.desktop
+DSK_PATH=${DIR_DESKTOP_FILES}/${DSK_FILE}
+
+action=$1
+if [ "$action" == "" ]; then action=安装; fi
+
+. ./scripts/common.sh
+
+function sw_download() {
+	tmpdns=`cd /exbin && droidexec ./vm_getHostByName.sh mirrors.cloud.tencent.com`
+	exit_if_fail $? "DNS解析失败"
+	echo "$tmpdns" >> /etc/hosts
+	# echo "211.97.84.91   mirrors.cloud.tencent.com"           >> /etc/hosts
+
+	case "${CURRENT_VM_ARCH}" in
+		"arm64")
+				which box64 >/dev/null 2>&1
+				if [ $? -ne 0 ]; then
+					echo ""				> /tmp/msg.txt
+					echo "请先安装box"	>>/tmp/msg.txt
+					echo ""				>>/tmp/msg.txt
+					gxmessage -title "提示" -file /tmp/msg.txt -center
+					exit 1
+				fi
+
+				swUrl=https://mirrors.cloud.tencent.com/AndroidSDK/android-ndk-r25c-linux.zip
+				;;
+		"amd64")
+				swUrl=https://mirrors.cloud.tencent.com/AndroidSDK/android-ndk-r25c-linux.zip
+				;;
+		*) exit_unsupport ;;
+	esac
+
+	download_file2 "${DEB_PATH}" "${swUrl}"
+	exit_if_fail $? "下载失败，网址：${swUrl}"
+}
+
+function sw_install() {
+	apt-get install -y make
+	exit_if_fail $? "依赖包安装失败"
+
+	apt-get install -y unzip
+	exit_if_fail $? "解压工具unzip安装失败"
+
+	echo "正在解压. . ."
+	unzip -oq ${DEB_PATH} -d /opt/apps/
+	exit_if_fail $? "安装失败，软件包：${DEB_PATH}"
+}
+
+function sw_create_desktop_file() {
+	case "${CURRENT_VM_ARCH}" in
+		"arm64")
+			echo "运行ndk中的gcc："
+			echo "NDK_DIR=/opt/apps/android-ndk-r25c"
+			echo "NDK_BIN=\${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+			echo "export NDKCC=\${NDK_BIN}/clang"
+			echo "box64 /opt/apps/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+			echo ""
+			echo "更多信息请参考： ./scripts/res/droidcc-demo.sh"
+			;;
+		"amd64")
+			echo ""
+			;;
+		*) exit_unsupport ;;
+	esac
+}
+
+if [ "${action}" == "卸载" ]; then
+	echo "暂不支持卸载"
+	exit 1
+else
+
+	sw_download
+	sw_install
+	sw_create_desktop_file
+fi

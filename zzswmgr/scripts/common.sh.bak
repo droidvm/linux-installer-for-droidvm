@@ -1,0 +1,244 @@
+#!/bin/bash
+
+export ZZSWMGR_MAIN_DIR=`pwd`
+export ZZSWMGR_TEMP_DIR=${ZZSWMGR_MAIN_DIR}/tmp
+export ZZSWMGR_APPI_DIR=/opt/apps
+export ZZ_ENV=WSL
+
+
+. /etc/profile
+cd ${ZZSWMGR_MAIN_DIR}
+
+tmp_username=`cat ./tmp/whoami.txt`
+if [ "${tmp_username}" == "" ]; then
+  tmp_username=droidvm
+fi
+export ZZ_USER_NAME=${tmp_username}
+
+# echo "APP_FILENAME_URLDLSERVER: ${APP_FILENAME_URLDLSERVER}"
+if [ -f "${APP_FILENAME_URLDLSERVER}" ]; then
+  . ${APP_FILENAME_URLDLSERVER}
+fi
+
+# if [ -f "./scripts/display.sh" ]; then
+#   . ./scripts/display.sh
+# fi
+# echo "DISPLAY  环境变量为: |$DISPLAY|"
+
+
+if [ -f "${app_home}/droidvm_vars.sh" ]; then
+source ${app_home}/droidvm_vars.sh
+fi
+if [ -f "${tools_dir}/vm_config.sh" ]; then
+source ${tools_dir}/vm_config.sh
+fi
+
+function exit_if_fail() {
+    rlt_code=$1
+    fail_msg=$2
+    if [ $rlt_code -ne 0 ]; then
+      echo -e "错误码: ${rlt_code}\n${fail_msg}"
+      # read -s -n1 -p "按任意键退出"
+      exit $rlt_code
+    fi
+}
+
+function exit_unsupport() {
+  echo "不支持的CPU架构: ${CURRENT_VM_ARCH}"
+  exit 2
+}
+
+function mkzzdir() {
+  [ -d ${ZZSWMGR_APPI_DIR} ] || mkdir -p ${ZZSWMGR_APPI_DIR}
+
+  [ -d ${ZZSWMGR_TEMP_DIR} ] || mkdir -p ${ZZSWMGR_TEMP_DIR}
+  chmod 777 ${ZZSWMGR_TEMP_DIR}
+}
+
+# aria2c 不稳定，经常有下载失败的情况发生，准备换成 axel， sudo apt install axel
+
+function download_file_axel() {
+  filesaveto=$1
+  url=$2
+  echo "正在下载：${url}"
+  tmp_wdir=`pwd`
+  echo "工作目录：${tmp_wdir}"
+  echo "保存路径：${filesaveto}"
+  [ -f ${filesaveto} ] || axel -n 10 -o "${filesaveto}" "${url}"
+  rlt_code=$?
+  if [ $rlt_code -ne 0 ]; then
+    rm -rf "${filesaveto}"
+  fi
+
+  return ${rlt_code}
+}
+
+function download_file_aria2c() {
+  filesaveto=$1
+  url=$2
+  echo "正在下载：${url}"
+  tmp_wdir=`pwd`
+  echo "工作目录：${tmp_wdir}"
+  echo "保存路径：${filesaveto}"
+  [ -f ${filesaveto} ] || aria2c --console-log-level=warn --no-conf --allow-overwrite=true -s 5 -x 5 -k 1M -o "${filesaveto}" "${url}"
+  rlt_code=$?
+  if [ $rlt_code -ne 0 ]; then
+    rm -rf "${filesaveto}" 2>/dev/null
+  fi
+
+  return ${rlt_code}
+}
+
+function download_file2() {
+  filesaveto=$1
+  url=$2
+  echo "正在下载：${url}"
+  tmp_wdir=`pwd`
+  echo "工作目录：${tmp_wdir}"
+  echo "保存路径：${filesaveto}"
+	[ -f ${filesaveto} ] || wget ${url} -O ${filesaveto}
+  rlt_code=$?
+  if [ $rlt_code -ne 0 ]; then
+    rm -rf "${filesaveto}" 2>/dev/null
+  fi
+
+  return ${rlt_code}
+}
+
+function download_file3() {
+  filesaveto=$1
+  url=$2
+  echo "正在克隆：${url}"
+  tmp_wdir=`pwd`
+  echo "工作目录：${tmp_wdir}"
+  echo "保存路径：${filesaveto}"
+  [ -d ${filesaveto} ] || git clone ${swUrl} ${filesaveto}
+  rlt_code=$?
+  if [ $rlt_code -ne 0 ]; then
+    rm -rf "${filesaveto}" 2>/dev/null
+  fi
+
+  return ${rlt_code}
+}
+
+function install_deb() {
+  DEBs=$@
+  echo "install_deb ${DEBs}"
+  sudo dpkg -i ${DEBs} || apt-get install -y ${DEBs}
+  rlt_code=$?
+  if [ $rlt_code -ne 0 ]; then
+    sudo apt-get --fix-broken install -y
+    exit_if_fail $? "安装失败, fail to apt-get --fix-broken install -y"
+    sudo dpkg -i ${DEBs} || apt-get install -y ${DEBs}
+    rlt_code=$?
+    return ${rlt_code}
+  fi
+  return ${rlt_code}
+}
+
+function cp2desktop() {
+  src_fil=$1
+
+  for file in `ls /home`
+  do
+    dst_dir=/home/${file}/Desktop/
+    if [ -d "${dst_dir}" ]; then
+      cp -f ${src_fil} ${dst_dir}
+    fi
+  done
+}
+
+function rm2desktop() {
+  src_fil=$1
+
+  for file in `ls /home`
+  do
+    rm -rf "/home/${file}/Desktop/${src_fil}"
+  done
+}
+
+function detect_env() {
+  uname -a|grep WSL
+  if [ $? -eq 0 ]; then
+    export ZZ_ENV=WSL
+    return
+  fi
+
+  if [ -f /exbin/droidvm_main.sh ]; then
+    export ZZ_ENV=DROIDVM
+    return
+  fi
+
+  export ZZ_ENV=LINUX
+}
+
+function get_box64_fullpath() {
+  ZZ_BOX64_FULLPATH=`which box64`
+  echo "${ZZ_BOX64_FULLPATH} "
+}
+
+function zz_enable_src_apt() {
+
+  if [ "${LINUX_DISTRIBUTION}" == "ubuntu" ]; then
+		if [ "${CURRENT_VM_ARCH}" == "arm64" ]; then
+			sudo cat <<- EOF > /etc/apt/sources.list.d/sourcecode.list
+			# 默认注释了源码仓库，如有需要可自行取消注释 【 注意：这是arm64架构的apt仓库!! 】
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName} main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-updates main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-backports main restricted universe multiverse
+
+			# deb https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName} main restricted universe multiverse
+			# deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName} main main restricted universe multiverse
+			# deb https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-updates main restricted universe multiverse
+			# deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-updates main restricted universe multiverse
+			# deb https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-backports main restricted universe multiverse
+			# deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-backports main restricted universe multiverse
+			# deb https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-security main restricted universe multiverse
+			# deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-security main restricted universe multiverse
+			# # 预发布软件源，不建议启用
+			# # deb https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-proposed main restricted universe multiverse
+			# deb-src https://mirrors.ustc.edu.cn/ubuntu-ports/ ${LINUXVersionName}-proposed main restricted universe multiverse
+			EOF
+		else
+			# jammy 版本收录的tigervnc版本跟 kinetic 收录的版本是相同的
+			sudo cat <<- EOF > /etc/apt/sources.list.d/sourcecode.list
+			deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName} main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName} main restricted universe multiverse
+			deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-updates main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-updates main restricted universe multiverse
+			deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-backports main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-backports main restricted universe multiverse
+			deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-security main restricted universe multiverse
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-security main restricted universe multiverse
+
+			# 预发布软件源，不建议启用
+			# deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-proposed main restricted universe multiverse
+			# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ ${LINUXVersionName}-proposed main restricted universe multiverse
+			EOF
+		fi
+  elif [ "${LINUX_DISTRIBUTION}" == "debian" ]; then
+			sudo cat <<- EOF > /etc/apt/sources.list.d/sourcecode.list
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ ${LINUXVersionName} main contrib non-free non-free-firmware
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ ${LINUXVersionName}-updates main contrib non-free non-free-firmware
+			deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ ${LINUXVersionName}-backports main contrib non-free non-free-firmware
+			deb-src https://security.debian.org/debian-security ${LINUXVersionName}-security main contrib non-free non-free-firmware
+			EOF
+  fi
+
+	sudo apt-get update
+}
+
+function zz_remove_src_apt() {
+  rm -rf /etc/apt/sources.list.d/sourcecode.list
+}
+
+function get_rootfs_codename() {
+	# echo "LINUX_ROOTFS_VER: $LINUX_ROOTFS_VER"
+  RLT=`lsb_release -c 2>/dev/null|grep name| cut -b 11-`
+  echo ${RLT}
+}
+
+mkzzdir
+detect_env
+export ROOTFS_CODENAME=`get_rootfs_codename`
+cd ${ZZSWMGR_MAIN_DIR}

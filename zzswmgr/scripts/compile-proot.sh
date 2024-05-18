@@ -1,0 +1,292 @@
+#!/bin/bash
+
+#
+#
+# proot 依赖 libtalloc 库，请先编译 talloc (./scripts/compile-talloc.sh)
+#
+# sudo apt-get install -y make git gawk
+# 安装 android-ndk
+# 若在虚拟电脑中编译，请先安装box
+#
+# 注意
+# 所有路径中都不要含有中文字符和空格
+# 设置脚本里面的 NDK_DIR 变量
+#
+#
+# https://github.com/green-green-avk/build-proot-android	我把这一份叫做proot-userland，用这份则 box86 有问题。。。
+# https://github.com/termux/proot							我把这一份叫做proot-termux，  用这份则 Electron 有问题。。。
+# 两份 proot 都有瑕疵
+# 所以我们把两份源码简单合并了
+# 我们以 proot-userland 分支为主，然后用termux分支中的一个C文件替换userland中的同路径文件：
+# cp -f proot---termux/src/extension/fake_id0/sendmsg.c \
+#       proot-userland/src/extension/fake_id0/sendmsg.c
+#
+
+action=$1
+if [ "$action" == "" ]; then action=安装; fi
+
+
+SWNAME=proot
+# PROOT_BRANCH=termux
+# PROOT_BRANCH=userland
+PROOT_BRANCH=termux
+DEB_PATH=./downloads/${SWNAME}.tar.gz
+DIR_DESKTOP_FILES=/usr/share/applications
+DSK_FILE=${SWNAME}.desktop
+DSK_PATH=${DIR_DESKTOP_FILES}/${DSK_FILE}
+SWMGR_DIR=`pwd`
+TMPDIR=${SWMGR_DIR}/tmp
+TALLOC_VER=2.4.0
+TALLOC_SRCDIR=${SWMGR_DIR}/tmp/talloc-${TALLOC_VER}
+FILENAME_INSERT_MK=${TMPDIR}/insert.mk
+abis="arm64-v8a x86_64"  #arm64-v8a armeabi-v7a x86_64 x86
+NDK_DIR=/opt/apps/android-ndk-r25c
+NDK_DIR=/media/lenovo/sw/downloads/android-ndk-r23b
+NDK_DIR=/mnt/d/downloads/android-ndk-r23b
+
+
+. ./scripts/common.sh
+
+function sw_download() {
+
+	# ndk installed?
+	[ -d $NDK_DIR ]
+	exit_if_fail $? "android-ndk 路径错误: ${NDK_DIR}\n(用于安卓的 ${SWNAME} , 必须使用android-ndk编译)"
+
+	if [ ! -d ${TALLOC_SRCDIR} ]; then
+		echo "请先编译 talloc(./scripts/compile-talloc.sh)"
+		echo "或者使用 /exbin/tools/prebuild-libs/ 目录中编译好的 lib-talloc-2.4.0.zip"
+		exit 1
+	fi
+
+	if [ "$PROOT_BRANCH" == "termux" ]; then
+		echo "正在下载 termux 版的proot"
+		PROOT_V='termux'
+		export SRC_DIR="${TMPDIR}/proot-$PROOT_V"
+		swUrl=https://github.com/termux/proot
+		swUrl=https://gitee.com/yelam2022/tmxproot
+		
+		download_file3 "${SRC_DIR}" "${swUrl}"
+		exit_if_fail $? "下载失败，网址：${swUrl}"
+
+		echo "正在修改源码..."
+		cp -f ./scripts/res/proot-user-binfmt-patch/user-binfmt.h ${SRC_DIR}/src/execve/
+		cp -f ./scripts/res/proot-user-binfmt-patch/enter.c       ${SRC_DIR}/src/execve/
+	else
+		echo "正在下载 userland 版的proot"
+		PROOT_V='userland'
+		export SRC_DIR="${TMPDIR}/proot-$PROOT_V"
+		swUrl=https://github.com/green-green-avk/proot
+		swUrl=https://gitee.com/yelam2022/ndkproot
+		
+		download_file3 "${SRC_DIR}" "${swUrl}"
+		exit_if_fail $? "下载失败，网址：${swUrl}"
+
+		echo "正在修改源码..."
+		cp -f ./scripts/res/termux_sendmsg.c ${SRC_DIR}/src/extension/fake_id0/sendmsg.c
+	fi
+}
+
+function prepare_vars() {
+	CPLARCH=$1
+	NDK_BIN=${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/bin
+	API_VER=26
+
+	detect_env
+	echo "ZZ_ENV: ${ZZ_ENV}"
+	if [ "${ZZ_ENV}" == "DROIDVM" ]; then
+		BOX64=`get_box64_fullpath`
+		echo "|${BOX64}|"
+
+		DIR_TMP_NDK_COMPILER=${TMPDIR}/ndk-compiler-${CPLARCH}-${API_VER}
+		rm -rf ${DIR_TMP_NDK_COMPILER}
+		mkdir -p ${DIR_TMP_NDK_COMPILER}/
+		fn_clang=`readlink ${NDK_BIN}/clang`
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/${fn_clang}	-target ${CPLARCH}-none-linux-android${API_VER} \$@" > ${DIR_TMP_NDK_COMPILER}/CC
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/${fn_clang}	-target ${CPLARCH}-none-linux-android${API_VER} \$@" > ${DIR_TMP_NDK_COMPILER}/CXX
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-strip													\$@" > ${DIR_TMP_NDK_COMPILER}/STRIP
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-ar														\$@" > ${DIR_TMP_NDK_COMPILER}/AR
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-as		-target ${CPLARCH}-none-linux-android${API_VER} \$@" > ${DIR_TMP_NDK_COMPILER}/AS
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/ld			-target ${CPLARCH}-none-linux-android${API_VER} \$@" > ${DIR_TMP_NDK_COMPILER}/LD
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-ranlib	-target ${CPLARCH}-none-linux-android${API_VER} \$@" > ${DIR_TMP_NDK_COMPILER}/RANLIB
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-objcopy													\$@" > ${DIR_TMP_NDK_COMPILER}/OBJCOPY
+		echo -e "#!/bin/bash\nexec ${BOX64} ${NDK_BIN}/llvm-objdump													\$@" > ${DIR_TMP_NDK_COMPILER}/OBJDUMP
+		chmod 755 ${DIR_TMP_NDK_COMPILER}/*
+
+		export CC=${DIR_TMP_NDK_COMPILER}/CC
+		export CXX=${DIR_TMP_NDK_COMPILER}/CXX
+		export STRIP=${DIR_TMP_NDK_COMPILER}/STRIP
+		export AR=${DIR_TMP_NDK_COMPILER}/AR
+		export AS=${DIR_TMP_NDK_COMPILER}/AS
+		export LD=${DIR_TMP_NDK_COMPILER}/LD
+		export RANLIB=${DIR_TMP_NDK_COMPILER}/RANLIB
+		export OBJCOPY=${DIR_TMP_NDK_COMPILER}/OBJCOPY
+		export OBJDUMP=${DIR_TMP_NDK_COMPILER}/OBJDUMP
+
+		NDK_SYSROOT=${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+	else
+		# 在 WSL 中手动编译
+		# cp -rf subs/linux-installer-for-droidvm/zzswmgr ~/
+		# cd ~/zzswmgr
+		# mkdir downloads tmp logs tmp
+		# export TALLOC_VER=2.4.0
+		# export TALLOC_SRCDIR=./tmp/talloc-${TALLOC_VER}
+		# mkdir -p ${TALLOC_SRCDIR}
+		# unzip -oq ./scripts/res/prebuild-lib-talloc-2.4.0.zip -d ${TALLOC_SRCDIR}
+		# ./scripts/compile-proot.sh
+		# cp -rf ./tmp/proot-termux/release/*  /mnt/e/Dev/EE/Rockchip/freemain/src/gui/os/android/droidvm/subs/ex_ndk_tools/ndkproot/proot-userbinfmt/
+
+		export CC="${NDK_BIN}/${CPLARCH}-linux-android${API_VER}-clang"
+		export CXX="${NDK_BIN}/${CPLARCH}-linux-android${API_VER}-clang++"
+		export STRIP="${NDK_BIN}/llvm-strip"
+		export AR="${NDK_BIN}/llvm-ar"
+		export AS="${NDK_BIN}/llvm-as"
+		export LD="${NDK_BIN}/ld"
+		export RANLIB="${NDK_BIN}/llvm-ranlib"
+		export OBJCOPY="${NDK_BIN}/llvm-objcopy"
+		export OBJDUMP="${NDK_BIN}/llvm-objdump"
+
+		NDK_SYSROOT=${NDK_DIR}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+	fi
+
+	echo $CC
+	echo $AR
+	# exit 1
+}
+
+function mk_insert_mk() {
+	FILENAME_INSERT_MK
+}
+
+
+function sw_compile() {
+	sudo apt-get install -y make git gawk
+	exit_if_fail $? "make git gawk 安装失败"
+
+	which gawk >/dev/null 2>&1
+	exit_if_fail $? "请先运行 sudo apt-get install -y gawk"
+
+	if [ "$PROOT_BRANCH" == "termux" ]; then
+		echo "无需解压"
+	else
+		echo "无需解压"
+		# echo "正在解压. . ."
+		# echo ${TMPDIR}
+		# tar -xzf ${DEB_PATH} --overwrite -C ${TMPDIR}
+		# exit_if_fail $? "源码解压失败，软件包：${DEB_PATH}"
+	fi
+
+	# echo "正在修改源码. . ."
+	# cp -f ./scripts/res/libtalloc_patch_os2_delete.c "${TMPDIR}/talloc-${TALLOC_VER}/lib/replace/tests/os2_delete.c"
+
+	export BOX64_NOBANNER=1
+	export BOX64_LOG=0
+	export BOX64_DYNAREC_LOG=0
+
+	for abi in ${abis}
+	do
+		echo -e "\n当前架构: ${abi}"
+		export CFLAGS=
+		export LDFLAGS=
+
+		mkrlt=2
+		case "${abi}" in
+			"arm64-v8a")
+				CPLARCH=aarch64
+				OS_ARCH=arm64
+				export CFLAGS=-DARCH_ARM64 
+				;;
+			"armeabi-v7a")
+				CPLARCH=armv7a
+				OS_ARCH=arm32
+				export CFLAGS=-DARCH_ARM_EABI -D__aarch64__
+				;;
+			"x86_64")
+				CPLARCH=x86_64
+				OS_ARCH=amd64
+
+				# 加上会导致编译失败
+				# export CFLAGS=-DARCH_X86_64
+				;;
+			"x86")
+				CPLARCH=i686
+				OS_ARCH=amd32
+				export CFLAGS=-DARCH_X86
+				;;
+			*)
+				echo "不支持的abi: |${abi}|"
+				exit 2
+				;;
+		esac
+
+		export INSTALL_DIR="${SRC_DIR}/release/${OS_ARCH}"
+		mkdir -p "$INSTALL_DIR"
+
+		prepare_vars ${CPLARCH}
+
+		export libtalloc_dir=${TALLOC_SRCDIR}/release/${OS_ARCH}
+
+		# tmp_inc_name=${CPLARCH}-linux-android
+		# if [ "armv7a" == "${CPLARCH}" ]; then
+		# 	tmp_inc_name=arm-linux-androideabi
+		# fi
+
+		# export  CFLAGS=" --sysroot ${NDK_SYSROOT} -I$libtalloc_dir/include -I${NDK_SYSROOT}/usr/include  -I${NDK_SYSROOT}/usr/include/${tmp_inc_name} -Werror=implicit-function-declaration "
+		export  CFLAGS=" -I$libtalloc_dir/include -D__ANDROID__ ${CFLAGS}"
+		export LDFLAGS=" -L$libtalloc_dir/lib/alib -Wl,-rpath='\$\$ORIGIN' -ltalloc -latomic -llog -landroid -lc -lm " # -Wl,-Bstatic -ltalloc
+
+		cd "${SRC_DIR}/src"
+
+		# if [ "$PROOT_BRANCH" == "termux" ]; then
+		# 	echo "正在修改makefile"
+
+		# 	# mk_insert_mk
+
+		# 	NEW_MK_FILE=makefile
+		# 	head -n  7  GNUmakefile       							> ${NEW_MK_FILE}
+		# 	cat ${SWMGR_DIR}/scripts/res/insert-${TALLOC_VER}.mk	>>${NEW_MK_FILE}
+		# 	tail -n +7 GNUmakefile        							>>${NEW_MK_FILE}
+		# 	head -n  50 ${NEW_MK_FILE}
+
+		# 	echo "正在编译"
+		# 	make -f ${NEW_MK_FILE} CPLARCH=${CPLARCH} distclean
+		# 	make -f ${NEW_MK_FILE} CPLARCH=${CPLARCH} proot -j$(nproc)
+		# 	exit_if_fail $? "编译失败"
+		# else
+			echo "正在编译"
+			make V=1 -f GNUmakefile distclean
+			make V=1 -f GNUmakefile -j$(nproc) proot # CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}"
+			exit_if_fail $? "编译失败"
+		# fi
+
+		ls -al ${SRC_DIR}/src/proot
+		echo "正在strip"
+		$STRIP --strip-unneeded --remove-section=.symtab ${SRC_DIR}/src/proot
+		ls -al ${SRC_DIR}/src/proot
+
+
+		echo "正在打包"
+		mkdir -p $INSTALL_DIR/loader
+		# cp -f ${libtalloc_dir}/lib/libtalloc.so		$INSTALL_DIR/libtalloc.so.2
+		cp -f ${SRC_DIR}/src/proot               	$INSTALL_DIR/
+		cp -f ${SRC_DIR}/src/loader/loader       	$INSTALL_DIR/loader/
+		cp -f ${SRC_DIR}/src/loader/loader-m32   	$INSTALL_DIR/loader/loader32
+		
+		echo "编译完成，请查看：$INSTALL_DIR"
+
+	done
+}
+
+function sw_create_desktop_file() {
+	echo ""
+}
+
+if [ "${action}" == "卸载" ]; then
+	echo "暂不支持卸载"
+	exit 1
+else
+
+	sw_download
+	sw_compile
+	sw_create_desktop_file
+fi
