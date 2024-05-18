@@ -1,0 +1,61 @@
+{
+   "checksum": "1b6a5a17f418f62791e599b57258ff0d",
+   "roots": {
+      "bookmark_bar": {
+         "children": [
+            {
+               "date_added": "13351743737507193",
+               "date_last_used": "13351743758343173",
+               "guid": "64f56378-e33f-4e63-851e-4ffa4f83e7e1",
+               "id": "5",
+               "meta_info": {
+                  "power_bookmark_meta": ""
+               },
+               "name": "百度搜索",
+               "type": "url",
+               "url": "https://www.baidu.com/"
+            },
+            {
+               "date_added": "13351743737507193",
+               "date_last_used": "13351743758343173",
+               "guid": "64f56378-e33f-4e63-851e-4ffa4f83e7e2",
+               "id": "5",
+               "meta_info": {
+                  "power_bookmark_meta": ""
+               },
+               "name": "必应搜索",
+               "type": "url",
+               "url": "https://www.bing.com/"
+            }
+         ],
+         "date_added": "13351743695111114",
+         "date_last_used": "0",
+         "date_modified": "13351743737507193",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "书签栏",
+         "type": "folder"
+      },
+      "other": {
+         "children": [],
+         "date_added": "13351743695111139",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "其他书签",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [],
+         "date_added": "13351743695111144",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "移动设备书签",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

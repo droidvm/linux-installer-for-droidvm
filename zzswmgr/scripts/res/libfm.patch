@@ -1,0 +1,139 @@
+diff -urN libfm-1.3.2_old/src/base/fm-file-info.c libfm-1.3.2/src/base/fm-file-info.c
+--- libfm-1.3.2_old/src/base/fm-file-info.c	2023-06-20 17:00:24.789214282 +0800
++++ libfm-1.3.2/src/base/fm-file-info.c	2023-06-20 17:07:38.345214308 +0800
+@@ -463,16 +463,16 @@
+ 
+         /* check if directory's file system is read-only, default is FALSE */
+         fi->fs_is_ro = FALSE;
+-        if (S_ISDIR(st.st_mode))
+-        {
+-            inf = g_file_query_filesystem_info(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
+-                                               NULL, NULL);
+-            if (inf)
+-            {
+-                fi->fs_is_ro = g_file_info_get_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY);
+-                g_object_unref(inf);
+-            }
+-        }
++        // if (S_ISDIR(st.st_mode))
++        // {
++        //     inf = g_file_query_filesystem_info(gfile, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
++        //                                        NULL, NULL);
++        //     if (inf)
++        //     {
++        //         fi->fs_is_ro = g_file_info_get_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY);
++        //         g_object_unref(inf);
++        //     }
++        // }
+         g_object_unref(gfile);
+     }
+     else
+@@ -659,8 +659,8 @@
+         if(!fi->mime_type)
+             fi->mime_type = fm_mime_type_ref(_fm_mime_type_get_inode_directory());
+         fi->fs_is_ro = FALSE; /* default is R/W */
+-        if (g_file_info_has_attribute(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY))
+-            fi->fs_is_ro = g_file_info_get_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY);
++        // if (g_file_info_has_attribute(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY))
++        //     fi->fs_is_ro = g_file_info_get_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY);
+         break;
+     case G_FILE_TYPE_SYMBOLIC_LINK:
+ _file_is_symlink:
+diff -urN libfm-1.3.2_old/src/gtk/fm-file-menu.c libfm-1.3.2/src/gtk/fm-file-menu.c
+--- libfm-1.3.2_old/src/gtk/fm-file-menu.c	2023-06-20 17:00:24.717214282 +0800
++++ libfm-1.3.2/src/gtk/fm-file-menu.c	2023-06-20 17:18:52.813214348 +0800
+@@ -151,10 +151,10 @@
+     {"Open", GTK_STOCK_OPEN, N_("_Open"), NULL, NULL, G_CALLBACK(on_open)},
+     {"OpenWith", NULL, N_("Open _With..."), NULL, NULL, G_CALLBACK(on_open_with)},
+     {"OpenWithMenu", NULL, N_("Open _With"), NULL, NULL, NULL},
+-    {"Cut", GTK_STOCK_CUT, NULL, NULL, NULL, G_CALLBACK(on_cut)},
+-    {"Copy", GTK_STOCK_COPY, NULL, NULL, NULL, G_CALLBACK(on_copy)},
+-    {"Paste", GTK_STOCK_PASTE, NULL, NULL, NULL, G_CALLBACK(on_paste)},
+-    {"Del", GTK_STOCK_DELETE, NULL, NULL, NULL, G_CALLBACK(on_delete)},
++    {"Cut", GTK_STOCK_CUT, "剪切", NULL, NULL, G_CALLBACK(on_cut)},
++    {"Copy", GTK_STOCK_COPY, "复制", NULL, NULL, G_CALLBACK(on_copy)},
++    {"Paste", GTK_STOCK_PASTE, "粘贴", NULL, NULL, G_CALLBACK(on_paste)},
++    {"Del", GTK_STOCK_DELETE, "删除", NULL, NULL, G_CALLBACK(on_delete)},
+     {"CopyPath", NULL, N_("Copy Pa_th(s)"), NULL, NULL, G_CALLBACK(on_copy_path)},
+     {"Hide", NULL, N_("H_ide"), NULL, NULL, G_CALLBACK(on_hide)},
+     {"Unhide", NULL, N_("Unh_ide"), NULL, NULL, G_CALLBACK(on_unhide)},
+diff -urN libfm-1.3.2_old/src/gtk/fm-folder-view.c libfm-1.3.2/src/gtk/fm-folder-view.c
+--- libfm-1.3.2_old/src/gtk/fm-folder-view.c	2023-06-20 17:00:24.713214282 +0800
++++ libfm-1.3.2/src/gtk/fm-folder-view.c	2023-06-20 17:22:50.933214362 +0800
+@@ -181,16 +181,16 @@
+     {"NewFolder3", NULL, NULL, "KP_Insert", NULL, G_CALLBACK(on_create_new)},
+     {"NewBlank", NULL, N_("Empty File"), NULL, NULL, G_CALLBACK(on_create_new)},
+     /* {"NewShortcut", "system-run", N_("Shortcut"), NULL, NULL, G_CALLBACK(on_create_new)}, */
+-    {"Cut", GTK_STOCK_CUT, NULL, "<Ctrl>X", NULL, G_CALLBACK(on_cut)},
+-    {"Copy", GTK_STOCK_COPY, NULL, "<Ctrl>C", NULL, G_CALLBACK(on_copy)},
++    {"Cut", GTK_STOCK_CUT, "剪切", "<Ctrl>X", NULL, G_CALLBACK(on_cut)},
++    {"Copy", GTK_STOCK_COPY, "复制", "<Ctrl>C", NULL, G_CALLBACK(on_copy)},
+     {"Copy2", NULL, NULL, "<Ctrl>Insert", NULL, G_CALLBACK(on_copy)},
+-    {"Paste", GTK_STOCK_PASTE, NULL, "<Ctrl>V", NULL, G_CALLBACK(on_paste)},
++    {"Paste", GTK_STOCK_PASTE, "粘贴", "<Ctrl>V", NULL, G_CALLBACK(on_paste)},
+     {"Paste2", NULL, NULL, "<Shift>Insert", NULL, G_CALLBACK(on_paste)},
+     {"Del", GTK_STOCK_DELETE, NULL, "Delete", NULL, G_CALLBACK(on_trash)},
+     {"Del2", NULL, NULL, "KP_Delete", NULL, G_CALLBACK(on_trash)},
+     {"Remove", GTK_STOCK_REMOVE, NULL, "<Shift>Delete", NULL, G_CALLBACK(on_rm)},
+     {"Remove2", NULL, NULL, "<Shift>KP_Delete", NULL, G_CALLBACK(on_rm)},
+-    {"SelAll", GTK_STOCK_SELECT_ALL, NULL, "<Ctrl>A", NULL, G_CALLBACK(on_select_all)},
++    {"SelAll", GTK_STOCK_SELECT_ALL, "全选", "<Ctrl>A", NULL, G_CALLBACK(on_select_all)},
+     {"InvSel", NULL, N_("_Invert Selection"), "<Ctrl>I", NULL, G_CALLBACK(on_invert_select)},
+     {"Sort", NULL, N_("_Sort Files"), NULL, NULL, NULL},
+     {"Rename", NULL, N_("_Rename Folder..."), NULL, NULL, G_CALLBACK(on_rename)},
+@@ -1375,6 +1375,19 @@
+         g_string_free(str, TRUE);
+     }
+     gtk_ui_manager_ensure_update(fm_file_menu_get_ui(menu));
++
++    // add by liuzhou zhengzhuo software ltd.
++    // ============================================================
++    ui = fm_file_menu_get_ui(menu);
++    // char* xml_ui = (char*)(gtk_ui_manager_get_ui(ui));
++    // printf("xml_ui: %s\n", xml_ui);
++
++    // pcmanfm menu
++    act = gtk_ui_manager_get_action(ui, "/popup/ph2/Fix");
++    gtk_action_set_label(act, "图标固定");
++    gtk_action_set_visible(act, FALSE);
++    // ============================================================
++
+     return fm_file_menu_get_menu(menu);
+ }
+ 
+diff -urN libfm-1.3.2_old/src/job/fm-file-info-job.h libfm-1.3.2/src/job/fm-file-info-job.h
+--- libfm-1.3.2_old/src/job/fm-file-info-job.h	2023-06-20 17:00:24.553214282 +0800
++++ libfm-1.3.2/src/job/fm-file-info-job.h	2023-06-20 17:07:36.209214308 +0800
+@@ -110,18 +110,20 @@
+ static inline gboolean
+ _fm_file_info_job_update_fs_readonly(GFile *gf, GFileInfo *inf, GCancellable *cancellable, GError **error)
+ {
+-    /* check if FS is R/O and set attr. into inf */
+-    GFileInfo *fs_inf = g_file_query_filesystem_info(gf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
+-                                                     cancellable, error);
+-    if (fs_inf)
+-    {
+-        if (g_file_info_has_attribute(fs_inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY))
+-            g_file_info_set_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
+-                    g_file_info_get_attribute_boolean(fs_inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY));
+-        g_object_unref(fs_inf);
+-        return TRUE;
+-    }
+-    return FALSE;
++    return TRUE;
++
++    // /* check if FS is R/O and set attr. into inf */
++    // GFileInfo *fs_inf = g_file_query_filesystem_info(gf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
++    //                                                  cancellable, error);
++    // if (fs_inf)
++    // {
++    //     if (g_file_info_has_attribute(fs_inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY))
++    //         g_file_info_set_attribute_boolean(inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY,
++    //                 g_file_info_get_attribute_boolean(fs_inf, G_FILE_ATTRIBUTE_FILESYSTEM_READONLY));
++    //     g_object_unref(fs_inf);
++    //     return TRUE;
++    // }
++    // return FALSE;
+ }
+ 
+ static inline gboolean

@@ -1,0 +1,28 @@
+1).
+在 enter.c 中 的 "int translate_execve_enter(Tracee *tracee)" 函数前面 #include "user-binfmt.h"
+
+2).
+同样的函数名称，在 translate_execve_enter 函数内部的 
+if (tracee->qemu != NULL)
+和
+talloc_unlink(tracee, tracee->load_info);
+之间添加：
+	// user-binfmt-support
+	status = expand_user_binfmt(tracee, host_path, user_path);
+	if (status < 0)
+		return status;
+
+添加完如下：
+	tracee->skip_proot_loader = false;
+	if (tracee->qemu != NULL) {
+		status = expand_runner(tracee, host_path, user_path);
+		if (status < 0)
+			return status;
+	}
+
+	// user-binfmt-support
+	status = expand_user_binfmt(tracee, host_path, user_path);
+	if (status < 0)
+		return status;
+
+	talloc_unlink(tracee, tracee->load_info);

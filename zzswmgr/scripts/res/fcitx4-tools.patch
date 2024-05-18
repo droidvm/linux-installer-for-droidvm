@@ -1,0 +1,48 @@
+diff -urN fcitx-4.2.9.9/tools/cli.old/mb2org.c fcitx-4.2.9.9/tools/cli/mb2org.c
+--- fcitx-4.2.9.9/tools/cli.old/mb2org.c	2024-05-07 17:45:31.435456637 +0800
++++ fcitx-4.2.9.9/tools/cli/mb2org.c	2024-05-07 17:46:27.079456640 +0800
+@@ -49,7 +49,7 @@
+     struct _HZMap *HZMap;
+ 
+     struct _PYMB *PYMB;
+-    char c;
++    int c;
+     boolean isUser = true;
+ 
+     while ((c = getopt(argc, argv, "f:b:sh")) != -1) {
+diff -urN fcitx-4.2.9.9/tools/cli.old/readPYBase.c fcitx-4.2.9.9/tools/cli/readPYBase.c
+--- fcitx-4.2.9.9/tools/cli.old/readPYBase.c	2024-05-07 17:45:31.431456637 +0800
++++ fcitx-4.2.9.9/tools/cli/readPYBase.c	2024-05-07 17:47:23.379456644 +0800
+@@ -35,7 +35,7 @@
+     char *pybase_mb = NULL;
+ 
+     struct _HZMap *HZMap;
+-    char c;
++    int c;
+ 
+     while ((c = getopt(argc, argv, "b:h")) != -1) {
+         switch (c) {
+diff -urN fcitx-4.2.9.9/tools/cli.old/readPYMB.c fcitx-4.2.9.9/tools/cli/readPYMB.c
+--- fcitx-4.2.9.9/tools/cli.old/readPYMB.c	2024-05-07 17:45:31.435456637 +0800
++++ fcitx-4.2.9.9/tools/cli/readPYMB.c	2024-05-07 17:47:41.831456645 +0800
+@@ -37,7 +37,7 @@
+ 
+     struct _PYMB *PYMB;
+     boolean isUser = true;
+-    char c;
++    int c;
+ 
+     while ((c = getopt(argc, argv, "f:sh")) != -1) {
+         switch (c) {
+diff -urN fcitx-4.2.9.9/tools/cli.old/scel2org.c fcitx-4.2.9.9/tools/cli/scel2org.c
+--- fcitx-4.2.9.9/tools/cli.old/scel2org.c	2024-05-07 17:45:31.443456637 +0800
++++ fcitx-4.2.9.9/tools/cli/scel2org.c	2024-05-07 17:47:57.651456646 +0800
+@@ -70,7 +70,7 @@
+ int main(int argc, char **argv)
+ {
+     FILE *fout = stdout;
+-    char c;
++    int c;
+ 
+     boolean alternativeOrder = false;
+ 

@@ -1,0 +1,117 @@
+diff --git a/klippy/chelper/serialqueue.c b/klippy/chelper/serialqueue.c
+index e6810933..67374378 100644
+--- a/klippy/chelper/serialqueue.c
++++ b/klippy/chelper/serialqueue.c
+@@ -84,6 +84,7 @@ struct serialqueue {
+ 
+ #define SQT_UART 'u'
+ #define SQT_CAN 'c'
++#define SQT_SOCKET 's'
+ #define SQT_DEBUGFILE 'f'
+ 
+ #define MIN_RTO 0.025
+diff --git a/klippy/mcu.py b/klippy/mcu.py
+index 68179bdd..25360e73 100644
+--- a/klippy/mcu.py
++++ b/klippy/mcu.py
+@@ -567,12 +567,17 @@ class MCU:
+         self._serial = serialhdl.SerialReader(self._reactor, warn_prefix=wp)
+         self._baud = 0
+         self._canbus_iface = None
++        self._tcp_port = None
+         canbus_uuid = config.get('canbus_uuid', None)
++        host_dev = config.get('host', None)
+         if canbus_uuid is not None:
+             self._serialport = canbus_uuid
+             self._canbus_iface = config.get('canbus_interface', 'can0')
+             cbid = self._printer.load_object(config, 'canbus_ids')
+             cbid.add_uuid(config, canbus_uuid, self._canbus_iface)
++        elif host_dev is not None:
++            self._serialport = host_dev
++            self._tcp_port = config.getint('port', 8888)
+         else:
+             self._serialport = config.get('serial')
+             if not (self._serialport.startswith("/dev/rpmsg_")
+@@ -581,7 +586,7 @@ class MCU:
+         # Restarts
+         restart_methods = [None, 'arduino', 'cheetah', 'command', 'rpi_usb']
+         self._restart_method = 'command'
+-        if self._baud:
++        if self._baud or self._tcp_port:
+             rmethods = {m: m for m in restart_methods}
+             self._restart_method = config.getchoice('restart_method',
+                                                     rmethods, None)
+@@ -793,6 +798,8 @@ class MCU:
+                     nodeid = cbid.get_nodeid(self._serialport)
+                     self._serial.connect_canbus(self._serialport, nodeid,
+                                                 self._canbus_iface)
++                elif self._tcp_port:
++                    self._serial.connect_net(self._serialport, self._tcp_port)
+                 elif self._baud:
+                     # Cheetah boards require RTS to be deasserted
+                     # else a reset will trigger the built-in bootloader.
+diff --git a/klippy/serialhdl.py b/klippy/serialhdl.py
+index f3c4ed99..6252ba00 100644
+--- a/klippy/serialhdl.py
++++ b/klippy/serialhdl.py
+@@ -3,7 +3,7 @@
+ # Copyright (C) 2016-2021  Kevin O'Connor <kevin@koconnor.net>
+ #
+ # This file may be distributed under the terms of the GNU GPLv3 license.
+-import logging, threading, os
++import logging, threading, os, socket
+ import serial
+ 
+ import msgproto, chelper, util
+@@ -195,6 +195,30 @@ class SerialReader:
+             ret = self._start_session(serial_dev)
+             if ret:
+                 break
++    def connect_net(self, netdevice, tcpport):
++        # Initial connection
++        logging.info("%sStarting network connect", self.warn_prefix)
++        start_time = self.reactor.monotonic()
++        while 1:
++            if self.reactor.monotonic() > start_time + 90.:
++                self._error("Unable to connect")
++            try:
++                serial_dev = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
++                serial_dev.setsockopt(socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, 100)
++                serial_dev.setsockopt(socket.SOL_SOCKET,  socket.SO_KEEPALIVE, 1)
++                serial_dev.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
++                serial_dev.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1)
++                serial_dev.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1)
++                serial_dev.connect((netdevice, tcpport))
++            except (OSError, IOError) as e:
++                logging.warn("%sUnable to connect to host: %s",
++                             self.warn_prefix, e)
++                self.reactor.pause(self.reactor.monotonic() + 5.)
++                continue
++            #stk500v2_leave(serial_dev, self.reactor)
++            ret = self._start_session(serial_dev, b's')
++            if ret:
++                break
+     def connect_file(self, debugoutput, dictionary, pace=False):
+         self.serial_dev = debugoutput
+         self.msgparser.process_identify(dictionary, decompress=False)
+
+--- /klippy/klippy.py.old	2023-12-06 11:47:00.000000000 +0800
++++ /klippy/klippy.py	2023-12-06 12:58:22.188187400 +0800
+@@ -381,7 +381,17 @@ def main():
+     gc.disable()
+ 
+     # Start Printer() class
++    firstloop = True
+     while 1:
++
++        # 自动映射安卓端的usbserial设备到tcp_socket
++        if firstloop:
++            firstloop = False
++        else:
++            print("klipper 上位机重启中，正在重新映射安卓端设备...")
++            rltmap = os.system('zzmapdevice')
++            print("设备映射结果: ", rltmap)
++
+         if bglogger is not None:
+             bglogger.clear_rollover_info()
+             bglogger.set_rollover_info('versions', versions)

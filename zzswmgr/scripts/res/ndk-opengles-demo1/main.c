@@ -1,0 +1,335 @@
+// #include <jni.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+// #include <android/log.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+// #include <conio.h> // 安卓没有这个头文件？
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <pthread.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <net/if.h>
+
+#define LOG_TAG "offscreen"
+// #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGI(...) { printf( __VA_ARGS__); printf("\n"); }
+
+#define imgw		512
+#define imgh		512
+#define BMP_PATH	"./test.bmp"
+
+static EGLConfig eglConf;
+static EGLSurface eglSurface;
+static EGLContext eglCtx;
+static EGLDisplay eglDisp;
+
+
+/* 相关动态库
+cat <<- EOF > ./rtlibs.txt
+/system/lib64/liblog.so
+/system/lib64/libEGL.so
+/system/lib64/libGLESv3.so
+/system/lib64/libstdc++.so
+/system/lib64/libm.so
+/system/lib64/libdl.so
+/system/lib64/libc.so
+/system/lib64/libc++.so
+/system/lib64/ld-android.so
+/system/lib64/libcutils.so
+/system/lib64/libui.so
+/system/lib64/libnativewindow.so
+/system/lib64/libbacktrace.so
+/system/lib64/libvndksupport.so
+/system/lib64/android.hardware.graphics.allocator@2.0.so
+/system/lib64/android.hardware.graphics.mapper@2.0.so
+/system/lib64/android.hardware.configstore@1.0.so
+/system/lib64/android.hardware.configstore-utils.so
+/system/lib64/libbase.so
+/system/lib64/libnativeloader.so
+/system/lib64/libhardware.so
+/system/lib64/libhidlbase.so
+/system/lib64/libhidltransport.so
+/system/lib64/libhwbinder.so
+/system/lib64/libsync.so
+/system/lib64/libutils.so
+/system/lib64/libbinder.so
+/system/lib64/android.hardware.graphics.common@1.0.so
+/system/lib64/android.hidl.base@1.0.so
+/system/lib64/libunwind.so
+/system/lib64/liblzma.so
+/system/lib64/libnativehelper.so
+/system/lib64/libnativebridge.so
+EOF
+
+[ -d ./rtlibs ] || mkdir ./rtlibs
+cat ./rtlibs.txt | while read line
+do
+	cp -f ${line} ./rtlibs/
+done
+
+patchelf --set-rpath "\$ORIGIN"             ./rtlibs/*
+
+**/
+
+
+const char vertex_shader_fix[] =
+	"attribute vec4 a_Position;\n"
+	"void main() {\n"
+	"	gl_Position=a_Position;\n"
+	"}\n";
+
+const char fragment_shader_simple[] =
+	"precision mediump float;\n"
+	"void main(){\n"
+	"	gl_FragColor = vec4(0.0,1.0,0.0,1.0);\n"
+	"}\n";
+
+const float tableVerticesWithTriangles[] = {
+	// Triangle1
+	-0.5f,
+	-0.5f,
+	0.5f,
+	0.5f,
+	-0.5f,
+	0.5f,
+	// Triangle2
+	-0.1f,
+	-0.5f,
+	0.5f,
+	-0.5f,
+	0.5f,
+	1.0f,
+};
+
+// extern "C"
+// {
+void MyGles_init();
+void MyGles_draw();
+void MyGles_release();
+// }
+
+void MyGles_init()
+{
+	// EGL config attributes
+	const EGLint confAttr[] =
+		{
+			EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT, // very important!
+			EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,		 // EGL_WINDOW_BIT EGL_PBUFFER_BIT we will create a pixelbuffer surface
+			EGL_RED_SIZE, 8,
+			EGL_GREEN_SIZE, 8,
+			EGL_BLUE_SIZE, 8,
+			EGL_ALPHA_SIZE, 8, // if you need the alpha channel
+			EGL_DEPTH_SIZE, 8, // if you need the depth buffer
+			EGL_STENCIL_SIZE, 8,
+			EGL_NONE};
+	// EGL context attributes
+	const EGLint ctxAttr[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2, // very important!
+		EGL_NONE};
+	// surface attributes
+	// the surface size is set to the input frame size
+	const EGLint surfaceAttr[] = {
+		EGL_WIDTH, imgw,
+		EGL_HEIGHT, imgh,
+		EGL_NONE};
+	EGLint eglMajVers, eglMinVers;
+	EGLint numConfigs;
+
+	eglDisp = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	if (eglDisp == EGL_NO_DISPLAY)
+	{
+		// Unable to open connection to local windowing system
+		LOGI("Unable to open connection to local windowing system");
+	}
+	if (!eglInitialize(eglDisp, &eglMajVers, &eglMinVers))
+	{
+		// Unable to initialize EGL. Handle and recover
+		LOGI("Unable to initialize EGL");
+	}
+	LOGI("EGL init with version %d.%d", eglMajVers, eglMinVers);
+	// choose the first config, i.e. best config
+	if (!eglChooseConfig(eglDisp, confAttr, &eglConf, 1, &numConfigs))
+	{
+		LOGI("some config is wrong");
+	}
+	else
+	{
+		LOGI("all configs is OK");
+	}
+	// create a pixelbuffer surface
+	eglSurface = eglCreatePbufferSurface(eglDisp, eglConf, surfaceAttr);
+	if (eglSurface == EGL_NO_SURFACE)
+	{
+		switch (eglGetError())
+		{
+		case EGL_BAD_ALLOC:
+			// Not enough resources available. Handle and recover
+			LOGI("Not enough resources available");
+			break;
+		case EGL_BAD_CONFIG:
+			// Verify that provided EGLConfig is valid
+			LOGI("provided EGLConfig is invalid");
+			break;
+		case EGL_BAD_PARAMETER:
+			// Verify that the EGL_WIDTH and EGL_HEIGHT are
+			// non-negative values
+			LOGI("provided EGL_WIDTH and EGL_HEIGHT is invalid");
+			break;
+		case EGL_BAD_MATCH:
+			// Check window and EGLConfig attributes to determine
+			// compatibility and pbuffer-texture parameters
+			LOGI("Check window and EGLConfig attributes");
+			break;
+		}
+	}
+	eglCtx = eglCreateContext(eglDisp, eglConf, EGL_NO_CONTEXT, ctxAttr);
+	if (eglCtx == EGL_NO_CONTEXT)
+	{
+		EGLint error = eglGetError();
+		if (error == EGL_BAD_CONFIG)
+		{
+			// Handle error and recover
+			LOGI("EGL_BAD_CONFIG");
+		}
+	}
+	if (!eglMakeCurrent(eglDisp, eglSurface, eglSurface, eglCtx))
+	{
+		LOGI("MakeCurrent failed");
+	}
+
+	const GLubyte* name = glGetString(GL_VENDOR); //返回负责当前OpenGL实现厂商的名字
+	const GLubyte* biaoshifu = glGetString(GL_RENDERER); //返回一个渲染器标识符，通常是个硬件平台
+	printf("OpenGL实现厂商的名字：%s\n", name);
+	printf("        渲染器标识符：%s\n", biaoshifu);
+
+	LOGI("initialize success!");
+}
+
+void MyGles_draw()
+{
+	const char *vertex_shader = vertex_shader_fix;
+	const char *fragment_shader = fragment_shader_simple;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
+	glViewport(0, 0, imgw, imgh);
+	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &vertex_shader, NULL);
+	glCompileShader(vertexShader);
+	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &fragment_shader, NULL);
+	glCompileShader(fragmentShader);
+	GLuint program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+	glUseProgram(program);
+	GLuint aPositionLocation = glGetAttribLocation(program, "a_Position");
+	glVertexAttribPointer(aPositionLocation, 2, GL_FLOAT, GL_FALSE, 0, tableVerticesWithTriangles);
+	glEnableVertexAttribArray(aPositionLocation);
+	// draw something
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	eglSwapBuffers(eglDisp, eglSurface);
+}
+
+int bmp_write(unsigned char *image, int xsize, int ysize, char *bmppath)
+{
+	unsigned char header[54] = {0x42, 0x4d, 0, 0, 0, 0, 0, 0, 0, 0,
+								54, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 32, 0,
+								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								0, 0, 0, 0};
+	long file_size = (long)xsize * (long)ysize * 4 + 54;
+	header[2] = (unsigned char)(file_size & 0x000000ff);
+	header[3] = (file_size >> 8) & 0x000000ff;
+	header[4] = (file_size >> 16) & 0x000000ff;
+	header[5] = (file_size >> 24) & 0x000000ff;
+	long width = xsize;
+	header[18] = width & 0x000000ff;
+	header[19] = (width >> 8) & 0x000000ff;
+	header[20] = (width >> 16) & 0x000000ff;
+	header[21] = (width >> 24) & 0x000000ff;
+	long height = ysize;
+	header[22] = height & 0x000000ff;
+	header[23] = (height >> 8) & 0x000000ff;
+	header[24] = (height >> 16) & 0x000000ff;
+	header[25] = (height >> 24) & 0x000000ff;
+
+	FILE *fp;
+	if (!(fp = fopen(bmppath, "wb")))
+		return -1;
+	fwrite(header, sizeof(unsigned char), 54, fp);
+	fwrite(image, sizeof(unsigned char), (size_t)(long)xsize * ysize * 4, fp);
+	fclose(fp);
+	return 0;
+}
+
+void MyGles_tobmp()
+{
+	int img_size_in_pixels = imgw * imgh;
+	int *pixel = (int *)malloc(sizeof(int) * img_size_in_pixels);
+	memset(pixel, 0, sizeof(int) * img_size_in_pixels);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	// printf("---------1-------\n");
+	glReadPixels(0, 0, imgw, imgh, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+
+	bmp_write((unsigned char *)pixel, imgw, imgh, BMP_PATH);
+	free(pixel);
+}
+
+void MyGles_release()
+{
+	eglMakeCurrent(eglDisp, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglDestroyContext(eglDisp, eglCtx);
+	eglDestroySurface(eglDisp, eglSurface);
+	eglTerminate(eglDisp);
+
+	eglDisp = EGL_NO_DISPLAY;
+	eglSurface = EGL_NO_SURFACE;
+	eglCtx = EGL_NO_CONTEXT;
+}
+
+int main()
+{
+
+	printf("=================NDK OpenGLES 测试开始\n");
+	printf("这个程序既可运行于android console中，也可运行于droidvm中\n");
+	// printf("这个程序仅可运行于android console中\n");
+
+	printf("NDK OpenGLES 离屏绘图测试\n");
+	printf("\n\n");
+
+	MyGles_init();
+	MyGles_draw();
+	MyGles_tobmp();
+	MyGles_release();
+
+	printf("看到这条消息说明编译、运行都成功了\n");
+	// printf("这个程序即可运行于android console中，也可运行于droidvm中\n");
+	// printf("这个程序仅可运行于android console中\n");
+	// printf("在droidvm中，可以这样调用：droidexec ./vm/linux-arm64/home/droidvm/main\n");
+
+	// 也可以这样启动！
+	// droidexec ./vm/linux-arm64/home/droidvm/main
+	// /system/bin/linker64     /exbin/tools/zzswmgr/scripts/res/ndk-opengles-demo1/build/abi_arm64-v8a/main
+	printf("请查看：%s\n", BMP_PATH);
+
+	printf("=================NDK OpenGLES 测试结束\n");
+
+	printf("回车键退出\n");
+	getchar();
+
+	return 0;
+}
